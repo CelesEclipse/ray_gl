@@ -1,0 +1,16 @@
+#pragma once
+
+#include "raylib.h"
+#include "raymath.h"
+
+typedef struct Player Player_t;
+
+Player_t * player_initialize(const char * name);
+void player_destroy(Player_t * player);
+
+/* Getter functions */
+Vector3 player_get_position(const Player_t * player);
+Vector3 player_get_direction(const Player_t * player);
+float   player_get_speed(const Player_t * player);
+float   player_get_rotation(const Player_t * player);
+void    player_update_general(Player_t * player, Vector3 * out_pos, float * out_rotation, float deltatime, Vector3 forward, Vector3 right);
