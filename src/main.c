@@ -65,8 +65,44 @@ int main(void)
         Vector3 right = { -forward.z, 0.0f, forward.x };
 
         /* Need to pass by pointer to synch between internal functions & main */
+        Vector3 old_pos = pl_pos;
+
         player_update_general(pl, &pl_pos, &pl_rotation, deltaTime, forward, right);
         enemy_update_general(e1, &e1_pos, &pl_pos, deltaTime);
+        player_update_collider(pl);
+        enemy_update_collider(e1);
+
+        /* Check collision */
+        Vector3 movement = Vector3Subtract(pl_pos, old_pos);
+        if (CheckCollisionBoxes(player_get_collider(pl), enemy_get_collider(e1))) {
+
+            BoundingBox pl_box = player_get_collider(pl);
+            BoundingBox e1_box = enemy_get_collider(e1);
+            
+            // Calculate overlap penetration
+            float overlap_x = fminf(pl_box.max.x, e1_box.max.x) - fmaxf(pl_box.min.x, e1_box.min.x);
+            float overlap_y = fminf(pl_box.max.y, e1_box.max.y) - fmaxf(pl_box.min.y, e1_box.min.y);
+            float overlap_z = fminf(pl_box.max.z, e1_box.max.z) - fmaxf(pl_box.min.z, e1_box.min.z);
+
+            Vector3 normal = {0};
+            if (overlap_x < overlap_y && overlap_x < overlap_z) {
+                normal.x = (pl_box.min.x < e1_box.min.x) ? -1.0f : 1.0f;
+            } else if (overlap_y < overlap_z) {
+                normal.y = (pl_box.min.y < e1_box.min.y) ? -1.0f : 1.0f;
+            } else {
+                normal.z = (pl_box.min.z < e1_box.min.z) ? -1.0f : 1.0f;
+            }
+
+            // Calculate slide vector
+            float into_surface = Vector3DotProduct(movement, normal);
+            if (into_surface < 0.0f) {
+                movement = Vector3Subtract(movement, Vector3Scale(normal, into_surface));
+            }
+        }
+        
+        /* Update current position after resolve sliding impact */
+        pl_pos = Vector3Add(old_pos, movement);
+        player_set_position(pl, pl_pos);
         
         BeginDrawing();
             ClearBackground(DARKGRAY);

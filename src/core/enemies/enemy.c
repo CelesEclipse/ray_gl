@@ -17,13 +17,14 @@ typedef enum
 struct Enemy
 {
     char            m_name[NAME_SIZE];
-    Vector3         m_pos;
+    Vector3         m_position;
     float           m_hp;
     float           m_speed;
     float           m_atk_range;
     float           m_atk_dmg;
     float           m_rotation;
     EnemyState_t    m_state;
+    BoundingBox     m_collider;
 };
 
 Enemy_t * enemy_initialize(const char * name)
@@ -35,7 +36,7 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_name[sizeof(e->m_name) - 1] = '\0';
 
     /* Other features */
-    e->m_pos = (Vector3){0.0f, 1.0f, -5.0f};
+    e->m_position = (Vector3){0.0f, 1.0f, -5.0f};
     e->m_speed = 5.0f;
     e->m_hp = 100.0f;
     e->m_atk_range = 1.5f;
@@ -57,7 +58,7 @@ void enemy_destroy(Enemy_t * e)
 Vector3 enemy_get_position(const Enemy_t * enemy)
 {
     if (enemy == NULL) return Vector3Zero();
-    return enemy->m_pos;
+    return enemy->m_position;
 }
 
 float enemy_get_speed(const Enemy_t * enemy)
@@ -72,6 +73,29 @@ float enemy_get_rotation(const Enemy_t * enemy)
     return enemy->m_rotation;
 }
 
+BoundingBox enemy_get_collider(const Enemy_t * enemy)
+{
+    if (enemy == NULL) return (BoundingBox){0};
+    return enemy->m_collider;
+}
+
+void enemy_update_collider(Enemy_t * enemy)
+{
+    if (enemy == NULL) return;
+
+    enemy->m_collider.min = (Vector3){
+        enemy->m_position.x - 1.0f,
+        enemy->m_position.y - 1.0f,
+        enemy->m_position.z - 1.0f
+    };
+
+    enemy->m_collider.max = (Vector3){
+        enemy->m_position.x + 1.0f,
+        enemy->m_position.y + 1.0f,
+        enemy->m_position.z + 1.0f
+    };
+}
+
 void enemy_update_general(Enemy_t * enemy, Vector3 * out_pos, Vector3 * player_pos, float deltatime)
 {
     if (enemy == NULL || out_pos == NULL || player_pos == NULL) return;
@@ -79,7 +103,6 @@ void enemy_update_general(Enemy_t * enemy, Vector3 * out_pos, Vector3 * player_p
 
     Vector3 dist = Vector3Subtract(*player_pos, *out_pos);
     float distance = Vector3Length(dist);
-    printf("Dist: %.2f | AtkRange: %.2f | State: %d\n", distance, enemy->m_atk_range, enemy->m_state);
 
     if (distance > enemy->m_atk_range) {
         enemy->m_state = MOVING;
@@ -88,7 +111,7 @@ void enemy_update_general(Enemy_t * enemy, Vector3 * out_pos, Vector3 * player_p
         *out_pos = Vector3Add(*out_pos, scaled_vec);
 
         // Update back
-        enemy->m_pos = *out_pos;
+        enemy->m_position = *out_pos;
     }
 
     if (distance <= enemy->m_atk_range) {
