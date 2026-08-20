@@ -111,26 +111,42 @@ void player_update_collider(Player_t * player)
     };
 }
 
-void player_update_general(Player_t * player, Vector3 * out_pos, float * out_rotation, float deltatime, Vector3 forward, Vector3 right)
+Vector3 player_update_general(
+    Player_t *player,
+    float *out_rotation,
+    float deltatime,
+    Vector3 forward,
+    Vector3 right
+)
 {
-    if (player == NULL || out_pos == NULL || out_rotation == NULL) return;
+    /* Refactor, return movement instead of synch between struct and main */
+    if (player == NULL || out_rotation == NULL)
+        return (Vector3){0};
 
-    Vector3 moveDirection = (Vector3){0.0f, 0.0f, 0.0f};
-    if (IsKeyDown(KEY_W)) moveDirection = Vector3Add(moveDirection, forward);
-    if (IsKeyDown(KEY_S)) moveDirection = Vector3Subtract(moveDirection, forward);
-    if (IsKeyDown(KEY_A)) moveDirection = Vector3Subtract(moveDirection, right);
-    if (IsKeyDown(KEY_D)) moveDirection = Vector3Add(moveDirection, right);
+    Vector3 moveDirection = {0};
 
-    /* Need to synchronize to the variable in main */
+    if (IsKeyDown(KEY_W))
+        moveDirection = Vector3Add(moveDirection, forward);
+    if (IsKeyDown(KEY_S))
+        moveDirection = Vector3Subtract(moveDirection, forward);
+    if (IsKeyDown(KEY_A))
+        moveDirection = Vector3Subtract(moveDirection, right);
+    if (IsKeyDown(KEY_D))
+        moveDirection = Vector3Add(moveDirection, right);
+
     if (Vector3Length(moveDirection) > 0.0f) {
         moveDirection = Vector3Normalize(moveDirection);
-        *out_pos = Vector3Add(*out_pos, Vector3Scale(moveDirection, player->m_speed * deltatime));
         *out_rotation = atan2f(moveDirection.x, moveDirection.z) * RAD2DEG;
 
-        // Update back to struct
-        player->m_position = *out_pos;
         player->m_rotation = *out_rotation;
+
+        return Vector3Scale(
+            moveDirection,
+            player->m_speed * deltatime
+        );
     }
+
+    return (Vector3){0};
 }
 
 static void player_attack(void)

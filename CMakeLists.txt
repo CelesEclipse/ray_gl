@@ -13,6 +13,8 @@ set(SOURCES
     src/core/enemies/enemy.c
     src/core/player/player.c 
     src/core/player/player.h
+    src/core/collision/collision.h
+    src/core/collision/collision.c
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

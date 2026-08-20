@@ -79,6 +79,12 @@ BoundingBox enemy_get_collider(const Enemy_t * enemy)
     return enemy->m_collider;
 }
 
+void enemy_set_position(Enemy_t * enemy, Vector3 new_pos)
+{
+    if (enemy == NULL) return;
+    enemy->m_position = new_pos;
+}
+
 void enemy_update_collider(Enemy_t * enemy)
 {
     if (enemy == NULL) return;
@@ -96,25 +102,26 @@ void enemy_update_collider(Enemy_t * enemy)
     };
 }
 
-void enemy_update_general(Enemy_t * enemy, Vector3 * out_pos, Vector3 * player_pos, float deltatime)
+Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime)
 {
-    if (enemy == NULL || out_pos == NULL || player_pos == NULL) return;
-    if (enemy->m_state == DEAD) return;
+    /* Same as player */
+    if (enemy == NULL) return (Vector3){0};
+    if (enemy->m_state == DEAD) return (Vector3){0};
 
-    Vector3 dist = Vector3Subtract(*player_pos, *out_pos);
+    Vector3 dist = Vector3Subtract(player_pos, enemy->m_position);
     float distance = Vector3Length(dist);
 
     if (distance > enemy->m_atk_range) {
         enemy->m_state = MOVING;
-        Vector3 norm_vec = Vector3Normalize(dist);
-        Vector3 scaled_vec = Vector3Scale(norm_vec, (enemy->m_speed * deltatime));
-        *out_pos = Vector3Add(*out_pos, scaled_vec);
+        Vector3 direction = Vector3Normalize(dist);
 
-        // Update back
-        enemy->m_position = *out_pos;
+        return Vector3Scale(
+            direction,
+            enemy->m_speed * deltatime
+        );
     }
 
-    if (distance <= enemy->m_atk_range) {
-        enemy->m_state = ATTACK;
-    }
+    enemy->m_state = ATTACK;
+
+    return (Vector3){0};
 }
