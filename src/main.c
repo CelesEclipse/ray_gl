@@ -76,12 +76,13 @@ int main(void)
         enemy_update_collider(e1);
 
         // AABB 
-        movement = collision_resolve_aabb(
+        CollisionResult_t col = collision_resolve_aabb(
             player_get_collider(pl),
             enemy_get_collider(e1),
             movement
         );
-        pl_pos = Vector3Add(old_pos, movement);
+        pl_pos = Vector3Add(pl_pos, col.c_movement);
+        pl_pos = Vector3Add(pl_pos, col.c_correction);
         player_set_position(pl, pl_pos);
 
         /* render */
