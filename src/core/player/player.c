@@ -161,5 +161,5 @@ static void player_take_damage(void)
 
 static bool player_is_attacking(void)
 {
-
+    return true;
 }

@@ -20,6 +20,8 @@ struct Enemy
     Vector3         m_position;
     float           m_hp;
     float           m_speed;
+    float           m_atk_speed;
+    float           m_atk_timer;
     float           m_atk_range;
     float           m_atk_dmg;
     float           m_rotation;
@@ -39,6 +41,7 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_position = (Vector3){0.0f, 1.0f, -5.0f};
     e->m_speed = 5.0f;
     e->m_hp = 100.0f;
+    e->m_atk_speed = 2.0f;
     e->m_atk_range = 1.5f;
     e->m_atk_dmg = 20.0f;
     e->m_rotation = 0.0f;
@@ -111,7 +114,10 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
     Vector3 dist = Vector3Subtract(player_pos, enemy->m_position);
     float distance = Vector3Length(dist);
 
-    if (distance > enemy->m_atk_range) {
+    // instead of only checking atk_range, add a stop distance
+    // to prevent enemies from advancing near contact range
+    float stop_distance = enemy->m_atk_range + 1.0f + 0.5f;
+    if (distance > stop_distance) {
         enemy->m_state = MOVING;
         Vector3 direction = Vector3Normalize(dist);
 
@@ -119,9 +125,24 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
             direction,
             enemy->m_speed * deltatime
         );
+    } else {
+        enemy->m_state = ATTACK;
+        enemy_normal_attack(enemy, deltatime);
     }
 
-    enemy->m_state = ATTACK;
-
     return (Vector3){0};
+}
+
+void enemy_normal_attack(Enemy_t * enemy, float deltatime)
+{
+    if (enemy == NULL) return;
+    if (enemy->m_state != ATTACK) return;
+
+    enemy->m_atk_timer += deltatime;
+    float atk_interval = 1.0f / enemy->m_atk_speed;
+
+    if (enemy->m_atk_timer >= atk_interval) {
+        enemy->m_atk_timer = 0.0f;
+    }
+
 }
