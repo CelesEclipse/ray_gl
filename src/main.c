@@ -9,7 +9,8 @@
 
 const int screenWidth = 1280;
 const int screenHeight = 720;
-#define   PLAYER_MAXHP  100
+#define     PLAYER_MAXHP    100
+#define     ENEMY_MAXHP     120
 
 int main(void)
 {
@@ -88,12 +89,16 @@ int main(void)
         player_set_position(pl, pl_pos);
 
         /* render */
-
+        BoundingBox e1_box = enemy_get_collider(e1);
+        float head_offset = e1_box.max.y - e1_pos.y;
+        Vector3 e1_top_head = Vector3Add(e1_pos, (Vector3){0.0f, head_offset + 0.3f, 0.0f});
+        Vector2 e1_screen_pos = GetWorldToScreen(e1_top_head, camera);
+        int e1_bar_width = 100;
         BeginDrawing();
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
                 DrawGrid(50, 1.0f);
-                DrawCube(e1_pos, 2.0f, 2.0f, 2.0f, RED);
+                DrawCube(e1_pos, 2.0f, 2.0f, 2.0f, GREEN);
 
                 DrawCylinderEx(pl_pos, Vector3Add(pl_pos, (Vector3){0, 2.0f, 0}), 0.6f, 0.6f, 16, BLUE);
                 Vector3 lookAtDir = {sinf(pl_rotation * DEG2RAD), 1.0f, cosf(pl_rotation * DEG2RAD)};
@@ -103,6 +108,10 @@ int main(void)
 
             DrawFPS(10, 10);
             display_hp_bar(10, 40, 200, 20, player_get_hp(pl), PLAYER_MAXHP);
+            display_hp_bar(e1_screen_pos.x - e1_bar_width / 2,
+                            e1_screen_pos.y,
+                            e1_bar_width, 15, enemy_get_hp(e1), ENEMY_MAXHP);
+
             DrawText(TextFormat("HP: %.0f", player_get_hp(pl)), 15, 45, 10, RAYWHITE);
 
         EndDrawing();

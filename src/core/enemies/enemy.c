@@ -40,7 +40,7 @@ Enemy_t * enemy_initialize(const char * name)
     /* Other features */
     e->m_position = (Vector3){0.0f, 1.0f, -5.0f};
     e->m_speed = 5.0f;
-    e->m_hp = 100.0f;
+    e->m_hp = 88.2f;
     e->m_atk_speed = 2.0f;
     e->m_atk_range = 1.5f;
     e->m_atk_dmg = 20.0f;
@@ -74,6 +74,12 @@ float enemy_get_rotation(const Enemy_t * enemy)
 {
     if (enemy == NULL) return 0.0f;
     return enemy->m_rotation;
+}
+
+float enemy_get_hp(const Enemy_t * enemy)
+{
+    if (enemy == NULL) return 0.0f;
+    return enemy->m_hp;
 }
 
 BoundingBox enemy_get_collider(const Enemy_t * enemy)
