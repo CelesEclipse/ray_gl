@@ -13,6 +13,8 @@ Vector3     enemy_get_position(const Enemy_t * enemy);
 float       enemy_get_speed(const Enemy_t * enemy);
 float       enemy_get_rotation(const Enemy_t * enemy);
 BoundingBox enemy_get_collider(const Enemy_t * enemy);
+float       enemy_get_maxhp(const Enemy_t * player);
+float       enemy_get_hp(const Enemy_t * player);
 
 /* Setter functions */
 void        enemy_set_position(Enemy_t * player, Vector3 new_pos);

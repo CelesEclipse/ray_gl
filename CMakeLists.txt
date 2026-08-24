@@ -13,6 +13,8 @@ set(SOURCES
     src/core/enemies/enemy.c
     src/core/player/player.c 
     src/core/player/player.h
+    src/core/hud/ui.h
+    src/core/hud/ui.c
     src/core/collision/collision.h
     src/core/collision/collision.c
 )

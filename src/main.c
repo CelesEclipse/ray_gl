@@ -4,10 +4,12 @@
 
 #include "core/player/player.h"
 #include "core/enemies/enemy.h"
+#include "core/hud/ui.h"
 #include "core/collision/collision.h"
 
 const int screenWidth = 1280;
 const int screenHeight = 720;
+#define   PLAYER_MAXHP  100
 
 int main(void)
 {
@@ -100,7 +102,8 @@ int main(void)
             EndMode3D();
 
             DrawFPS(10, 10);
-            DrawText("Mouse to rotate CAMERA | WASD to move", 10, 40, 20, RAYWHITE);
+            display_hp_bar(10, 40, 200, 20, player_get_hp(pl), PLAYER_MAXHP);
+            DrawText(TextFormat("HP: %.0f", player_get_hp(pl)), 15, 45, 10, RAYWHITE);
 
         EndDrawing();
     }

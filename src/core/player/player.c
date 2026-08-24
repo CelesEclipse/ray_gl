@@ -39,7 +39,7 @@ Player_t * player_initialize(const char * name)
     p->m_position = (Vector3){0.0f, 0.0f, 0.0f};
     p->m_direction = (Vector3){0.0f, 0.0f, 0.0f};
     p->m_speed = 8.0f;
-    p->m_hp = 100.0f;
+    p->m_hp = 36.0f;
     p->m_atk_range = 1.5f;
     p->m_atk_dmg = 20.0f;
     p->m_rotation = 0.0f;
@@ -79,6 +79,12 @@ float player_get_rotation(const Player_t * player)
 {
     if (player == NULL) return 0.0f;
     return player->m_rotation;
+}
+
+float player_get_hp(const Player_t * player)
+{
+    if (player == NULL) return 0.0f;
+    return player->m_hp;
 }
 
 BoundingBox player_get_collider(const Player_t * player)
