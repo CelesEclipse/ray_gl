@@ -41,6 +41,16 @@ int main(void)
     while (!WindowShouldClose()) {
         float deltaTime = GetFrameTime();
 
+        /* test the bar only */
+        // Use IsKeyPressed instead of IsKeyDown (which can take 2-3 frames)
+        // so it will triply decrease the amount of the passed argument
+        if (IsKeyPressed(KEY_Q)) {
+            player_set_hp(pl, -10.0f);
+        }
+        if (IsKeyPressed(KEY_R)) {
+            enemy_set_hp(e1, -10.0f);
+        }
+
         /* Camera input */
         Vector2 mouseDelta = GetMouseDelta();
         cameraAngleH -= mouseDelta.x * 0.003f;
@@ -94,6 +104,9 @@ int main(void)
         Vector3 e1_top_head = Vector3Add(e1_pos, (Vector3){0.0f, head_offset + 0.3f, 0.0f});
         Vector2 e1_screen_pos = GetWorldToScreen(e1_top_head, camera);
         int e1_bar_width = 100;
+        int e1_bar_x = e1_screen_pos.x - e1_bar_width / 2;
+        int e1_bar_y = e1_screen_pos.y;
+
         BeginDrawing();
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
@@ -108,11 +121,10 @@ int main(void)
 
             DrawFPS(10, 10);
             display_hp_bar(10, 40, 200, 20, player_get_hp(pl), PLAYER_MAXHP);
-            display_hp_bar(e1_screen_pos.x - e1_bar_width / 2,
-                            e1_screen_pos.y,
-                            e1_bar_width, 15, enemy_get_hp(e1), ENEMY_MAXHP);
+            display_hp_bar(e1_bar_x, e1_bar_y, e1_bar_width, 15, enemy_get_hp(e1), ENEMY_MAXHP);
 
             DrawText(TextFormat("HP: %.0f", player_get_hp(pl)), 15, 45, 10, RAYWHITE);
+            DrawText(TextFormat("HP: %.0f", enemy_get_hp(e1)), e1_bar_x + 5, e1_bar_y + 5, 10, RAYWHITE);
 
         EndDrawing();
     }

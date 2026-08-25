@@ -94,6 +94,13 @@ void enemy_set_position(Enemy_t * enemy, Vector3 new_pos)
     enemy->m_position = new_pos;
 }
 
+void enemy_set_hp(Enemy_t * enemy, float hp)
+{
+    if (enemy == NULL) return;
+    enemy->m_hp += hp;
+    if (enemy->m_hp < 0) enemy->m_hp = 0;
+}
+
 void enemy_update_collider(Enemy_t * enemy)
 {
     if (enemy == NULL) return;

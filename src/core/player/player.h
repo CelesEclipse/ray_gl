@@ -20,4 +20,5 @@ BoundingBox player_get_collider(const Player_t * player);
 /* Setter functions */
 void        player_set_position(Player_t * player, Vector3 new_pos);
 void        player_update_collider(Player_t * player);
+void        player_set_hp(Player_t * player, float hp);
 Vector3     player_update_general(Player_t * player, float * out_rotation, float deltatime, Vector3 forward, Vector3 right);

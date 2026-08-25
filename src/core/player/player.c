@@ -100,6 +100,12 @@ void player_set_position(Player_t * player, Vector3 new_pos)
     player->m_position = new_pos;
 }
 
+void player_set_hp(Player_t * player, float hp)
+{
+    if (player == NULL) return;
+    player->m_hp += hp;
+    if (player->m_hp < 0) player->m_hp = 0;
+}
 void player_update_collider(Player_t * player)
 {
     if (player == NULL) return;
