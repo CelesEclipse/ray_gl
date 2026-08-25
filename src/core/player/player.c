@@ -87,6 +87,12 @@ float player_get_hp(const Player_t * player)
     return player->m_hp;
 }
 
+int player_get_state(const Player_t * player)
+{
+    if (player == NULL) return 0;
+    return (int)player->m_state;
+}
+
 BoundingBox player_get_collider(const Player_t * player)
 {
     if (player == NULL) return (BoundingBox){0};

@@ -9,6 +9,8 @@ include_directories(${RAYLIB_SRC_DIR})
 
 set(SOURCES 
     src/main.c 
+    src/utils/utils.h
+    src/utils/utils.c
     src/core/enemies/enemy.h
     src/core/enemies/enemy.c
     src/core/player/player.c 

@@ -82,6 +82,12 @@ float enemy_get_hp(const Enemy_t * enemy)
     return enemy->m_hp;
 }
 
+int enemy_get_state(const Enemy_t * enemy)
+{
+    if (enemy == NULL) return 0;
+    return (int)enemy->m_state;
+}
+
 BoundingBox enemy_get_collider(const Enemy_t * enemy)
 {
     if (enemy == NULL) return (BoundingBox){0};

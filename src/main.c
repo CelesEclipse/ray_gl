@@ -7,6 +7,8 @@
 #include "core/hud/ui.h"
 #include "core/collision/collision.h"
 
+#include "utils/utils.h"
+
 const int screenWidth = 1280;
 const int screenHeight = 720;
 #define     PLAYER_MAXHP    100
@@ -124,7 +126,9 @@ int main(void)
             display_hp_bar(e1_bar_x, e1_bar_y, e1_bar_width, 15, enemy_get_hp(e1), ENEMY_MAXHP);
 
             DrawText(TextFormat("HP: %.0f", player_get_hp(pl)), 15, 45, 10, RAYWHITE);
+            DrawText(TextFormat("pl : %s", state_to_string(player_get_state(pl))), 15, 85, 30, DARKBLUE);
             DrawText(TextFormat("HP: %.0f", enemy_get_hp(e1)), e1_bar_x + 5, e1_bar_y + 5, 10, RAYWHITE);
+            DrawText(TextFormat("e1 : %s", state_to_string(enemy_get_state(e1))), 1000, 85, 30, PURPLE);
 
         EndDrawing();
     }
