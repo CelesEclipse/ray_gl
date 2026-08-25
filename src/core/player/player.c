@@ -157,6 +157,7 @@ Vector3 player_update_general(
         *out_rotation = atan2f(moveDirection.x, moveDirection.z) * RAD2DEG;
 
         player->m_rotation = *out_rotation;
+        player->m_state = MOVING;
 
         return Vector3Scale(
             moveDirection,
@@ -164,6 +165,7 @@ Vector3 player_update_general(
         );
     }
 
+    player->m_state = IDLE;
     return (Vector3){0};
 }
 

@@ -24,6 +24,7 @@ struct Enemy
     float           m_atk_timer;
     float           m_atk_range;
     float           m_atk_dmg;
+    float           m_detect_range;
     float           m_rotation;
     EnemyState_t    m_state;
     BoundingBox     m_collider;
@@ -44,6 +45,7 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_atk_speed = 2.0f;
     e->m_atk_range = 1.5f;
     e->m_atk_dmg = 20.0f;
+    e->m_detect_range = 10.0f;
     e->m_rotation = 0.0f;
     e->m_state = IDLE;
 
@@ -136,6 +138,11 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
     // instead of only checking atk_range, add a stop distance
     // to prevent enemies from advancing near contact range
     float stop_distance = enemy->m_atk_range + 1.0f + 0.5f;
+    if (distance > enemy->m_detect_range) {
+        enemy->m_state = IDLE;
+        return (Vector3){0};
+    }
+
     if (distance > stop_distance) {
         enemy->m_state = MOVING;
         Vector3 direction = Vector3Normalize(dist);
@@ -144,11 +151,9 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
             direction,
             enemy->m_speed * deltatime
         );
-    } else {
-        enemy->m_state = ATTACK;
-        enemy_normal_attack(enemy, deltatime);
     }
 
+    enemy->m_state = ATTACK;
     return (Vector3){0};
 }
 
