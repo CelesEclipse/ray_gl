@@ -154,6 +154,8 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
     }
 
     enemy->m_state = ATTACK;
+    enemy_normal_attack(enemy, deltatime);
+
     return (Vector3){0};
 }
 
@@ -168,5 +170,16 @@ void enemy_normal_attack(Enemy_t * enemy, float deltatime)
     if (enemy->m_atk_timer >= atk_interval) {
         enemy->m_atk_timer = 0.0f;
     }
+}
 
+void temp_display_toggle(Enemy_t * enemy)
+{
+    if (enemy == NULL) return;
+
+    Vector3 center = enemy->m_position;
+    float radius = enemy->m_detect_range;
+    Vector3 rot_axis = {1.0f, 0.0f, 0.0f};
+    float rot_angle = 90.0f;
+
+    DrawCircle3D(center, radius, rot_axis, rot_angle, YELLOW);
 }

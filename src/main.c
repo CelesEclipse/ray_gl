@@ -20,6 +20,7 @@ int main(void)
     Enemy_t * e1 = enemy_initialize("hero");
 
     InitWindow(screenWidth, screenHeight, "Cam - C99 & Raylib");
+    bool show_circle = false;
 
     Vector3 pl_pos = player_get_position(pl);
     float pl_rotation = player_get_rotation(pl);
@@ -112,6 +113,15 @@ int main(void)
         BeginDrawing();
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
+
+            // Flip circle for simple enemy detection
+                if (IsKeyPressed(KEY_C)) {
+                    show_circle = !show_circle;
+                }
+                    
+                if (show_circle) {
+                    temp_display_toggle(e1);
+                }
                 DrawGrid(50, 1.0f);
                 DrawCube(e1_pos, 2.0f, 2.0f, 2.0f, GREEN);
 

@@ -24,4 +24,5 @@ void        enemy_set_position(Enemy_t * player, Vector3 new_pos);
 void        enemy_update_collider(Enemy_t * enemy);
 void        enemy_set_hp(Enemy_t * enemy, float hp);
 void        enemy_normal_attack(Enemy_t * enemy, float deltatime);
+void        temp_display_toggle(Enemy_t * enemy);
 Vector3     enemy_update_general(Enemy_t * enemy, Vector3 player_pos, float deltatime);
