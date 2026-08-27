@@ -51,7 +51,15 @@ int main(void)
             player_set_hp(pl, -10.0f);
         }
         if (IsKeyPressed(KEY_R)) {
-            enemy_set_hp(e1, -10.0f);
+            enemy_take_damage(e1, 10.0f);
+        }
+        
+        // Respawn/despawn or true reset later, until main menu progress
+        if (player_is_dead(pl) && enemy_is_dead(e1)) {
+            if (IsKeyPressed(KEY_LEFT_CONTROL)) {
+                // player_reset
+                // enemy_reset
+            }
         }
 
         // Flip circle for simple enemy detection
@@ -86,7 +94,9 @@ int main(void)
 
         /* Player movement */
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
-
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+            player_normal_attack(pl, deltaTime);
+        }
         /* Enemy */
         Vector3 enemy_movement = enemy_update_general(e1, pl_pos, deltaTime);
         enemy_normal_attack(e1, deltaTime);
@@ -128,8 +138,12 @@ int main(void)
                     enemy_draw_detect_range(e1);
                 }
                 DrawGrid(50, 1.0f);
-                DrawCube(e1_pos, 2.0f, 2.0f, 2.0f, GREEN);
-
+                
+                // Simple conditional render
+                if (enemy_get_state(e1) != 3) {
+                    DrawCube(e1_pos, 2.0f, 2.0f, 2.0f, GREEN);
+                }
+                
                 DrawCylinderEx(pl_pos, Vector3Add(pl_pos, (Vector3){0, 2.0f, 0}), 0.6f, 0.6f, 16, BLUE);
                 Vector3 lookAtDir = {sinf(pl_rotation * DEG2RAD), 1.0f, cosf(pl_rotation * DEG2RAD)};
                 DrawSphere(Vector3Add(pl_pos, lookAtDir), 0.2f, GOLD);
@@ -145,6 +159,9 @@ int main(void)
             DrawText(TextFormat("HP: %.0f", enemy_get_hp(e1)), e1_bar_x + 5, e1_bar_y + 5, 10, RAYWHITE);
             DrawText(TextFormat("e1 : %s", state_to_string(enemy_get_state(e1))), 1000, 85, 30, PURPLE);
             DrawText(TextFormat("E1 ATK: %.1f", enemy_get_atk_timer(e1)), 1000, 65, 15, PURPLE);
+            if (player_get_state(pl) == 3) {
+                DrawText("YOU DIED", screenWidth/2 - 100, screenHeight/2, 40, RED);
+            }
 
         EndDrawing();
     }

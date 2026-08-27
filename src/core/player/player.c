@@ -21,6 +21,7 @@ struct Player
     float           m_hp;
     float           m_speed;
     float           m_atk_range;
+    float           m_atk_speed;
     float           m_atk_dmg;
     float           m_rotation;
     PlayerState_t   m_state;
@@ -41,6 +42,7 @@ Player_t * player_initialize(const char * name)
     p->m_speed = 8.0f;
     p->m_hp = 94.0f;
     p->m_atk_range = 1.5f;
+    p->m_atk_speed = 2.0f;
     p->m_atk_dmg = 20.0f;
     p->m_rotation = 0.0f;
     p->m_state = IDLE;
@@ -93,6 +95,12 @@ int player_get_state(const Player_t * player)
     return (int)player->m_state;
 }
 
+bool player_is_dead(const Player_t * player)
+{
+    if (player == NULL) return false;
+    return player->m_state == DEAD;
+}
+
 BoundingBox player_get_collider(const Player_t * player)
 {
     if (player == NULL) return (BoundingBox){0};
@@ -111,6 +119,13 @@ void player_set_hp(Player_t * player, float hp)
     if (player == NULL) return;
     player->m_hp += hp;
     if (player->m_hp < 0) player->m_hp = 0;
+}
+
+void player_normal_attack(Player_t * player, float deltatime)
+{
+    if (player == NULL) return;
+    if (player->m_state != ATTACK) return;
+
 }
 
 void player_take_damage(Player_t * player, float recv_dmg)
@@ -147,8 +162,8 @@ Vector3 player_update_general(
 )
 {
     /* Refactor, return movement instead of synch between struct and main */
-    if (player == NULL || out_rotation == NULL)
-        return (Vector3){0};
+    if (player == NULL || out_rotation == NULL) return (Vector3){0};
+    if (player->m_state == DEAD)    return (Vector3){0};
 
     Vector3 moveDirection = {0};
 
@@ -176,14 +191,4 @@ Vector3 player_update_general(
 
     player->m_state = IDLE;
     return (Vector3){0};
-}
-
-static void player_attack(void)
-{
-
-}
-
-static bool player_is_attacking(void)
-{
-    return true;
 }

@@ -43,7 +43,8 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_position = (Vector3){0.0f, 1.0f, -5.0f};
     e->m_speed = 5.0f;
     e->m_hp = 88.2f;
-    e->m_atk_speed = 2.0f;
+    e->m_atk_speed = 1.0f;
+    e->m_atk_timer = 0.0f;
     e->m_atk_range = 1.5f;
     e->m_atk_dmg = 20.0f;
     e->m_detect_range = 10.0f;
@@ -98,6 +99,12 @@ int enemy_get_state(const Enemy_t * enemy)
     return (int)enemy->m_state;
 }
 
+bool enemy_is_dead(const Enemy_t * enemy)
+{
+    if (enemy == NULL) return false;
+    return enemy->m_state == DEAD;
+}
+
 bool enemy_get_did_attack(const Enemy_t * enemy)
 {
     if (enemy == NULL) return false;
@@ -121,6 +128,16 @@ void enemy_set_hp(Enemy_t * enemy, float hp)
     if (enemy == NULL) return;
     enemy->m_hp += hp;
     if (enemy->m_hp < 0) enemy->m_hp = 0;
+}
+
+void enemy_take_damage(Enemy_t * enemy, float amount)
+{
+    if (enemy == NULL) return;
+    enemy->m_hp -= amount;
+
+    if (enemy->m_hp <= 0) {
+        enemy->m_state = DEAD;
+    }
 }
 
 void enemy_update_collider(Enemy_t * enemy)

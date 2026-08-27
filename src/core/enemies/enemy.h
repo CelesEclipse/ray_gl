@@ -16,6 +16,7 @@ float       enemy_get_maxhp(const Enemy_t * player);
 float       enemy_get_hp(const Enemy_t * player);
 float       enemy_get_atk_timer(const Enemy_t * player);
 int         enemy_get_state(const Enemy_t  * enemy);
+bool        enemy_is_dead(const Enemy_t * enemy);
 bool        enemy_get_did_attack(const Enemy_t * enemy);
 BoundingBox enemy_get_collider(const Enemy_t * enemy);
 
@@ -25,6 +26,7 @@ void        enemy_set_position(Enemy_t * player, Vector3 new_pos);
 /* Update movement and others */
 void        enemy_update_collider(Enemy_t * enemy);
 void        enemy_set_hp(Enemy_t * enemy, float hp);
+void        enemy_take_damage(Enemy_t * enemy, float amount);
 void        enemy_normal_attack(Enemy_t * enemy, float deltatime);
 void        enemy_draw_detect_range(Enemy_t * enemy);
 Vector3     enemy_update_general(Enemy_t * enemy, Vector3 player_pos, float deltatime);
