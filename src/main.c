@@ -143,7 +143,7 @@ int main(void)
                 DrawGrid(50, 1.0f);
                 
                 // Simple conditional render
-                if (enemy_get_state(e1) != 3) {
+                if (!enemy_is_dead(e1)) {
                     DrawCube(e1_pos, 2.0f, 2.0f, 2.0f, GREEN);
                 }
                 
@@ -162,7 +162,7 @@ int main(void)
             DrawText(TextFormat("HP: %.0f", enemy_get_hp(e1)), e1_bar_x + 5, e1_bar_y + 5, 10, RAYWHITE);
             DrawText(TextFormat("e1 : %s", state_to_string(enemy_get_state(e1))), 1000, 85, 30, PURPLE);
             DrawText(TextFormat("E1 ATK: %.1f", enemy_get_atk_timer(e1)), 1000, 65, 15, PURPLE);
-            if (player_get_state(pl) == 3) {
+            if (player_is_dead(pl)) {
                 DrawText("YOU DIED", screenWidth/2 - 100, screenHeight/2, 40, RED);
             }
 
