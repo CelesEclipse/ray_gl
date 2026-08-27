@@ -26,6 +26,7 @@ struct Enemy
     float           m_atk_dmg;
     float           m_detect_range;
     float           m_rotation;
+    bool            m_did_atk_this_tick;
     EnemyState_t    m_state;
     BoundingBox     m_collider;
 };
@@ -47,6 +48,7 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_atk_dmg = 20.0f;
     e->m_detect_range = 10.0f;
     e->m_rotation = 0.0f;
+    e->m_did_atk_this_tick = false;
     e->m_state = IDLE;
 
     return e;
@@ -84,10 +86,22 @@ float enemy_get_hp(const Enemy_t * enemy)
     return enemy->m_hp;
 }
 
+float enemy_get_atk_timer(const Enemy_t * enemy)
+{
+    if (enemy == NULL) return 0.0f;
+    return enemy->m_atk_timer;
+}
+
 int enemy_get_state(const Enemy_t * enemy)
 {
     if (enemy == NULL) return 0;
     return (int)enemy->m_state;
+}
+
+bool enemy_get_did_attack(const Enemy_t * enemy)
+{
+    if (enemy == NULL) return false;
+    return enemy->m_did_atk_this_tick;
 }
 
 BoundingBox enemy_get_collider(const Enemy_t * enemy)
@@ -169,6 +183,9 @@ void enemy_normal_attack(Enemy_t * enemy, float deltatime)
 
     if (enemy->m_atk_timer >= atk_interval) {
         enemy->m_atk_timer = 0.0f;
+        enemy->m_did_atk_this_tick = true;
+    } else {
+        enemy->m_did_atk_this_tick = false;
     }
 }
 

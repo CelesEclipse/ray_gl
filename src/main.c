@@ -90,6 +90,9 @@ int main(void)
         /* Enemy */
         Vector3 enemy_movement = enemy_update_general(e1, pl_pos, deltaTime);
         enemy_normal_attack(e1, deltaTime);
+        if (enemy_get_did_attack(e1)) {
+            player_take_damage(pl, 10.0f);
+        }
 
         e1_pos = Vector3Add(e1_pos, enemy_movement);
         enemy_set_position(e1, e1_pos);
@@ -141,6 +144,7 @@ int main(void)
             DrawText(TextFormat("pl : %s", state_to_string(player_get_state(pl))), 15, 85, 30, DARKBLUE);
             DrawText(TextFormat("HP: %.0f", enemy_get_hp(e1)), e1_bar_x + 5, e1_bar_y + 5, 10, RAYWHITE);
             DrawText(TextFormat("e1 : %s", state_to_string(enemy_get_state(e1))), 1000, 85, 30, PURPLE);
+            DrawText(TextFormat("E1 ATK: %.1f", enemy_get_atk_timer(e1)), 1000, 65, 15, PURPLE);
 
         EndDrawing();
     }

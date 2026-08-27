@@ -39,7 +39,7 @@ Player_t * player_initialize(const char * name)
     p->m_position = (Vector3){0.0f, 0.0f, 0.0f};
     p->m_direction = (Vector3){0.0f, 0.0f, 0.0f};
     p->m_speed = 8.0f;
-    p->m_hp = 36.0f;
+    p->m_hp = 94.0f;
     p->m_atk_range = 1.5f;
     p->m_atk_dmg = 20.0f;
     p->m_rotation = 0.0f;
@@ -112,6 +112,15 @@ void player_set_hp(Player_t * player, float hp)
     player->m_hp += hp;
     if (player->m_hp < 0) player->m_hp = 0;
 }
+
+void player_take_damage(Player_t * player, float recv_dmg)
+{
+    if (player == NULL) return;
+    player->m_hp -= recv_dmg;
+    if (player->m_hp < 0) player->m_hp = 0;
+    if (player->m_hp <= 0) player->m_state = DEAD;
+}
+
 void player_update_collider(Player_t * player)
 {
     if (player == NULL) return;
@@ -170,11 +179,6 @@ Vector3 player_update_general(
 }
 
 static void player_attack(void)
-{
-
-}
-
-static void player_take_damage(void)
 {
 
 }
