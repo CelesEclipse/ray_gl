@@ -22,8 +22,10 @@ struct Player
     float           m_speed;
     float           m_atk_range;
     float           m_atk_speed;
+    float           m_atk_timer;
     float           m_atk_dmg;
     float           m_rotation;
+    bool            m_did_atk_this_tick;
     PlayerState_t   m_state;
     BoundingBox     m_collider;
 };
@@ -43,8 +45,10 @@ Player_t * player_initialize(const char * name)
     p->m_hp = 94.0f;
     p->m_atk_range = 1.5f;
     p->m_atk_speed = 2.0f;
+    p->m_atk_timer = 0.0f;
     p->m_atk_dmg = 20.0f;
     p->m_rotation = 0.0f;
+    p->m_did_atk_this_tick = false;
     p->m_state = IDLE;
     p->m_collider.min = (Vector3){-0.5f, 0.0f, -0.5f};
     p->m_collider.max = (Vector3){0.5f, 2.0f, 0.5f};
@@ -101,6 +105,12 @@ bool player_is_dead(const Player_t * player)
     return player->m_state == DEAD;
 }
 
+bool player_get_did_attack(const Player_t * player)
+{
+    if (player == NULL) return false;
+    return player->m_did_atk_this_tick;
+}
+
 BoundingBox player_get_collider(const Player_t * player)
 {
     if (player == NULL) return (BoundingBox){0};
@@ -124,8 +134,22 @@ void player_set_hp(Player_t * player, float hp)
 void player_normal_attack(Player_t * player, float deltatime)
 {
     if (player == NULL) return;
-    if (player->m_state != ATTACK) return;
+    if (player->m_state == DEAD) return;
 
+    player->m_atk_timer += deltatime;
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        float atk_interval = 1.0f / player->m_atk_speed;
+        if (player->m_atk_timer >= atk_interval) {
+            player->m_atk_timer = 0.0f;
+            player->m_state = ATTACK;
+            player->m_did_atk_this_tick = true;
+        } else {
+            player->m_did_atk_this_tick = false;
+        }
+    } else {
+        player->m_did_atk_this_tick = false;
+    }
 }
 
 void player_take_damage(Player_t * player, float recv_dmg)

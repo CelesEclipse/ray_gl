@@ -94,14 +94,17 @@ int main(void)
 
         /* Player movement */
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            player_normal_attack(pl, deltaTime);
-        }
+
         /* Enemy */
         Vector3 enemy_movement = enemy_update_general(e1, pl_pos, deltaTime);
         enemy_normal_attack(e1, deltaTime);
         if (enemy_get_did_attack(e1)) {
             player_take_damage(pl, 10.0f);
+        }
+
+        player_normal_attack(pl, deltaTime);
+        if (player_get_did_attack(pl)) {
+            enemy_take_damage(e1, 10.0f);
         }
 
         e1_pos = Vector3Add(e1_pos, enemy_movement);

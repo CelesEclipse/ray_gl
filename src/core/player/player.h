@@ -17,6 +17,7 @@ float       player_get_maxhp(const Player_t * player);
 float       player_get_hp(const Player_t * player);
 int         player_get_state(const Player_t  * player);
 bool        player_is_dead(const Player_t * player);
+bool        player_get_did_attack(const Player_t * player);
 BoundingBox player_get_collider(const Player_t * player);
 
 /* Setter functions */
