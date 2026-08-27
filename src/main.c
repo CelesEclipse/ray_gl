@@ -54,6 +54,12 @@ int main(void)
             enemy_set_hp(e1, -10.0f);
         }
 
+        // Flip circle for simple enemy detection
+        // Move this out of render context
+        if (IsKeyPressed(KEY_C)) {
+            show_circle = !show_circle;
+        }
+
         /* Camera input */
         Vector2 mouseDelta = GetMouseDelta();
         cameraAngleH -= mouseDelta.x * 0.003f;
@@ -83,6 +89,7 @@ int main(void)
 
         /* Enemy */
         Vector3 enemy_movement = enemy_update_general(e1, pl_pos, deltaTime);
+        enemy_normal_attack(e1, deltaTime);
 
         e1_pos = Vector3Add(e1_pos, enemy_movement);
         enemy_set_position(e1, e1_pos);
@@ -113,14 +120,9 @@ int main(void)
         BeginDrawing();
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
-
-            // Flip circle for simple enemy detection
-                if (IsKeyPressed(KEY_C)) {
-                    show_circle = !show_circle;
-                }
                     
                 if (show_circle) {
-                    temp_display_toggle(e1);
+                    enemy_draw_detect_range(e1);
                 }
                 DrawGrid(50, 1.0f);
                 DrawCube(e1_pos, 2.0f, 2.0f, 2.0f, GREEN);

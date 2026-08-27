@@ -154,7 +154,7 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
     }
 
     enemy->m_state = ATTACK;
-    enemy_normal_attack(enemy, deltatime);
+    // should not call here
 
     return (Vector3){0};
 }
@@ -172,7 +172,7 @@ void enemy_normal_attack(Enemy_t * enemy, float deltatime)
     }
 }
 
-void temp_display_toggle(Enemy_t * enemy)
+void enemy_draw_detect_range(Enemy_t * enemy)
 {
     if (enemy == NULL) return;
 
