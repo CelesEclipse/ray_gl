@@ -53,3 +53,10 @@ Vector3 collision_get_pushout(BoundingBox b1, BoundingBox b2)
 
     return pushout;
 }
+
+bool collision_check_hitbox(BoundingBox atk_hitbox, BoundingBox def_hurtbox)
+{
+    return (atk_hitbox.min.x <= def_hurtbox.max.x && atk_hitbox.max.x >= def_hurtbox.min.x) &&
+            (atk_hitbox.min.y <= def_hurtbox.max.y && atk_hitbox.max.y >= def_hurtbox.min.y) &&
+            (atk_hitbox.min.z <= def_hurtbox.max.z && atk_hitbox.max.z >= def_hurtbox.min.z);
+}

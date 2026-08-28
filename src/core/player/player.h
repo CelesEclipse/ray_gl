@@ -19,6 +19,7 @@ int         player_get_state(const Player_t  * player);
 bool        player_is_dead(const Player_t * player);
 bool        player_get_did_attack(const Player_t * player);
 BoundingBox player_get_collider(const Player_t * player);
+BoundingBox player_get_hitbox(const Player_t * player);
 
 /* Setter functions */
 void        player_set_position(Player_t * player, Vector3 new_pos);

@@ -104,7 +104,12 @@ int main(void)
 
         player_normal_attack(pl, deltaTime);
         if (player_get_did_attack(pl)) {
-            enemy_take_damage(e1, 10.0f);
+            if (collision_check_hitbox(
+                player_get_hitbox(pl),
+                enemy_get_collider(e1)
+            )) {
+                enemy_take_damage(e1, 10.0f);
+            }
         }
 
         e1_pos = Vector3Add(e1_pos, enemy_movement);
@@ -139,6 +144,7 @@ int main(void)
                     
                 if (show_circle) {
                     enemy_draw_detect_range(e1);
+                    DrawBoundingBox(player_get_hitbox(pl), RED);
                 }
                 DrawGrid(50, 1.0f);
                 

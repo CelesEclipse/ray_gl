@@ -9,3 +9,4 @@ typedef struct CollisionResult_t {
 
 CollisionResult_t collision_resolve_aabb(BoundingBox b1, BoundingBox b2, Vector3 movement);
 Vector3 collision_get_pushout(BoundingBox b1, BoundingBox b2);
+bool collision_check_hitbox(BoundingBox atk_hitbox, BoundingBox def_hurtbox);

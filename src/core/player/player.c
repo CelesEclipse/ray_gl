@@ -117,6 +117,20 @@ BoundingBox player_get_collider(const Player_t * player)
     return player->m_collider;
 }
 
+BoundingBox player_get_hitbox(const Player_t * player)
+{
+    if (player == NULL) return (BoundingBox){0};
+
+    Vector3 facing = {sinf(player->m_rotation * DEG2RAD), 0.0f, cosf(player->m_rotation * DEG2RAD)};
+    Vector3 hitbox_centre = Vector3Add(player->m_position, Vector3Scale(facing, player->m_atk_range * 0.5f));
+
+    float half_size = player->m_atk_range * 0.5;
+    return (BoundingBox){
+        .min = (Vector3){hitbox_centre.x - half_size, player->m_position.y, hitbox_centre.z - half_size},
+        .max = (Vector3){hitbox_centre.x + half_size, player->m_position.y + 2.0f, hitbox_centre.z + half_size}
+    };
+}
+
 void player_set_position(Player_t * player, Vector3 new_pos)
 {
     if (player == NULL) return;
