@@ -18,6 +18,7 @@ float       enemy_get_atk_timer(const Enemy_t * player);
 int         enemy_get_state(const Enemy_t  * enemy);
 bool        enemy_is_dead(const Enemy_t * enemy);
 bool        enemy_get_did_attack(const Enemy_t * enemy);
+BoundingBox enemy_get_hitbox(const Enemy_t * enemy, Vector3 player_pos);
 BoundingBox enemy_get_collider(const Enemy_t * enemy);
 
 /* Setter functions */

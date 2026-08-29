@@ -99,7 +99,12 @@ int main(void)
         Vector3 enemy_movement = enemy_update_general(e1, pl_pos, deltaTime);
         enemy_normal_attack(e1, deltaTime);
         if (enemy_get_did_attack(e1)) {
-            player_take_damage(pl, 10.0f);
+            if (collision_check_hitbox(
+                enemy_get_hitbox(e1, player_get_position(pl)),
+                player_get_collider(pl)
+            )) {
+                player_take_damage(pl, 10.0f);
+            }
         }
 
         player_normal_attack(pl, deltaTime);
@@ -145,6 +150,7 @@ int main(void)
                 if (show_circle) {
                     enemy_draw_detect_range(e1);
                     DrawBoundingBox(player_get_hitbox(pl), RED);
+                    DrawBoundingBox(enemy_get_hitbox(e1, pl_pos), RED);
                 }
                 DrawGrid(50, 1.0f);
                 
