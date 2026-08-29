@@ -114,10 +114,13 @@ int main(void)
 
         /* Player movement */
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
+        player_normal_attack(pl, deltaTime);
+        player_update_collider(pl);
+        BoundingBox player_collider_snapshot = player_get_collider(pl);
+        Vector3 pl_correction_total = {0};
 
         /* Enemy */
         Vector3 enemy_movement[ENEMY_NUM];
-        player_normal_attack(pl, deltaTime);
         BoundingBox enbox_list[ENEMY_NUM];
         float head_offset[ENEMY_NUM];
         Vector3 en_top_head[ENEMY_NUM];
@@ -129,10 +132,15 @@ int main(void)
         for (int i = 0; i < ENEMY_NUM; ++i) {
             enemy_movement[i] = enemy_update_general(enemy_list[i], pl_pos, deltaTime);
             enemy_normal_attack(enemy_list[i], deltaTime);
+
+            enpos_list[i] = Vector3Add(enpos_list[i], enemy_movement[i]);
+            enemy_set_position(enemy_list[i], enpos_list[i]);
+            enemy_update_collider(enemy_list[i]);
+
             if (enemy_get_did_attack(enemy_list[i])) {
                 if (collision_check_hitbox(
-                    enemy_get_hitbox(enemy_list[i], player_get_position(pl)),
-                    player_get_collider(pl)
+                    enemy_get_hitbox(enemy_list[i], pl_pos),
+                    player_collider_snapshot
                 )) {
                     player_take_damage(pl, 10.0f);
                 }
@@ -147,23 +155,15 @@ int main(void)
                 }
             }
 
-            enpos_list[i] = Vector3Add(enpos_list[i], enemy_movement[i]);
-            enemy_set_position(enemy_list[i], enpos_list[i]);
-
-            /* Update colliders after movement */
-            player_update_collider(pl);
-            enemy_update_collider(enemy_list[i]);
-
             // AABB 
             CollisionResult_t col = collision_resolve_aabb(
-                player_get_collider(pl),
+                player_collider_snapshot,
                 enemy_get_collider(enemy_list[i]),
                 movement
             );
-            pl_pos = Vector3Add(pl_pos, col.c_movement);
-            pl_pos = Vector3Add(pl_pos, col.c_correction);
-            player_set_position(pl, pl_pos);
+            pl_correction_total = Vector3Add(pl_correction_total, col.c_correction);
 
+            // HUD preps
             enbox_list[i] = enemy_get_collider(enemy_list[i]);
             head_offset[i] = enbox_list[i].max.y - enpos_list[i].y;
             en_top_head[i] = Vector3Add(enpos_list[i], (Vector3){0.0f, head_offset[i] + 0.3f, 0.0f});
@@ -171,10 +171,14 @@ int main(void)
             en_bar_x[i] = en_screen_pos[i].x - e1_bar_width / 2;
             en_bar_y[i] = en_screen_pos[i].y;
         }
+        
+        // bring the player movement outside of loop, calculate correction ONCE
+        pl_pos = Vector3Add(pl_pos, movement);
+        pl_pos = Vector3Add(pl_pos, pl_correction_total);
+        player_set_position(pl, pl_pos);
+        player_update_collider(pl);
 
         /* render */
-
-
         BeginDrawing();
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
