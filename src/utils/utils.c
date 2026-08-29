@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include "utils.h"
@@ -30,4 +31,10 @@ const char * state_to_string(int value)
         break;
     }
     return res;
+}
+
+float random_float(float min, float max)
+{
+    float scale = (float)rand() / (float)RAND_MAX;
+    return min + scale * (max - min);
 }
