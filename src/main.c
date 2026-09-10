@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <time.h>
+#include "core/models/model_hdl.h"
 #include "raylib.h"
 #include "raymath.h"
 
@@ -190,12 +191,17 @@ int main(void)
         player_update_collider(pl);
 
         /* render */
+        BoundingBox model_box = model_get_scaled_bbox(pl_model, pl_pos, 150.0f, 0.5f);
         BeginDrawing();
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
 
                 if (show_circle) {
+#if MODEL_LOAD
+                    DrawBoundingBox(model_box, RED);
+#else
                     DrawBoundingBox(player_get_hitbox(pl), RED);
+#endif
                     for (int i = 0; i < ENEMY_NUM; ++i) {
                         enemy_draw_detect_range(enemy_list[i]);
                         DrawBoundingBox(enemy_get_hitbox(enemy_list[i], pl_pos), RED);

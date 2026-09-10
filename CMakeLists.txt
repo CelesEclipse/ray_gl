@@ -19,6 +19,8 @@ set(SOURCES
     src/core/hud/ui.c
     src/core/collision/collision.h
     src/core/collision/collision.c
+    src/core/models/model_hdl.h
+    src/core/models/model_hdl.c
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
