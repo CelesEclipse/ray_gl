@@ -1,0 +1,4 @@
+-I
+C:/raylib/raylib/src
+-I
+C:/raylib/w64devkit/include
