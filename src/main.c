@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <time.h>
 #include "raylib.h"
 #include "raymath.h"
@@ -10,11 +9,14 @@
 #include "core/collision/collision.h"
 #include "utils/utils.h"
 
+#define     MODEL_PATH      "../assets/raw_models/pl_model.glb"
+
 const int screenWidth = 1280;
 const int screenHeight = 720;
 #define     PLAYER_MAXHP    100
 #define     ENEMY_MAXHP     120
 #define     DEBUG_KEY       0
+#define     MODEL_LOAD      1
 #define     ENEMY_NUM       5
 
 static Vector3 generate_random_vector(float min, float max)
@@ -60,6 +62,15 @@ int main(void)
 
     DisableCursor();
     SetTargetFPS(60);
+
+#if MODEL_LOAD
+    Model pl_model = LoadModel(MODEL_PATH);
+    for (int i = 0; i < pl_model.materialCount; i++) {
+        pl_model.materials[i].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    }
+
+    pl_model.transform = MatrixMultiply(pl_model.transform, MatrixRotateX(-90.0f * DEG2RAD));
+#endif
 
     while (!WindowShouldClose()) {
         float deltaTime = GetFrameTime();
@@ -182,7 +193,7 @@ int main(void)
         BeginDrawing();
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
-                    
+
                 if (show_circle) {
                     DrawBoundingBox(player_get_hitbox(pl), RED);
                     for (int i = 0; i < ENEMY_NUM; ++i) {
@@ -198,10 +209,17 @@ int main(void)
                         DrawCube(enpos_list[i], 2.0f, 2.0f, 2.0f, GREEN);
                     }
                 }
+#if MODEL_LOAD
+                Vector3 model_scale_vec = {150.0f, 150.0f, 150.0f};
+                Vector3 rotation_axis = {0.0f, 1.0f, 0.0f};
+                float facing_angle = pl_rotation;
+                DrawModelEx(pl_model, pl_pos, rotation_axis, facing_angle, model_scale_vec, WHITE);
                 
+#else
                 DrawCylinderEx(pl_pos, Vector3Add(pl_pos, (Vector3){0, 2.0f, 0}), 0.6f, 0.6f, 16, BLUE);
                 Vector3 lookAtDir = {sinf(pl_rotation * DEG2RAD), 1.0f, cosf(pl_rotation * DEG2RAD)};
                 DrawSphere(Vector3Add(pl_pos, lookAtDir), 0.2f, GOLD);
+#endif
 
             EndMode3D();
 
@@ -213,15 +231,17 @@ int main(void)
             }
             DrawText(TextFormat("HP: %.0f", player_get_hp(pl)), 15, 45, 10, RAYWHITE);
             DrawText(TextFormat("pl : %s", state_to_string(player_get_state(pl))), 15, 85, 30, DARKBLUE);
-            // DrawText(TextFormat("HP: %.0f", enemy_get_hp(e1)), en_bar_x + 5, en_bar_y + 5, 10, RAYWHITE);
-            // DrawText(TextFormat("e1 : %s", state_to_string(enemy_get_state(e1))), 1000, 85, 30, PURPLE);
-            // DrawText(TextFormat("E1 ATK: %.1f", enemy_get_atk_timer(e1)), 1000, 65, 15, PURPLE);
+
             if (player_is_dead(pl)) {
                 DrawText("YOU DIED", screenWidth/2 - 100, screenHeight/2, 40, RED);
             }
 
         EndDrawing();
     }
+
+#if MODEL_LOAD
+    UnloadModel(pl_model);
+#endif
 
     player_destroy(pl);
     for (int i = 0; i < ENEMY_NUM; ++i) {
