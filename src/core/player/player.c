@@ -4,8 +4,9 @@
 #include "raylib.h"
 #include "raymath.h"
 
-#define NAME_SIZE   50
-#define MAX_HP      100
+#define NAME_SIZE       50
+#define MAX_HP          100
+#define CAPSULE_HEIGHT  2.8f
 
 typedef enum
 {
@@ -54,6 +55,7 @@ Player_t * player_initialize(const char * name)
     p->m_state = IDLE;
 
     p->m_collider = geometry_capsule_alloc();
+    geometry_capsule_set_radius(p->m_collider, 1.0f);
     return p;
 }
 
@@ -181,20 +183,19 @@ void player_update_collider(Player_t * player)
     if (player == NULL) return;
 
     float rad = geometry_capsule_get_radius(player->m_collider);
-    float col_len = geometry_capsule_calculate_height(player->m_collider);
+    float segment_len = CAPSULE_HEIGHT - (2.0f * rad);
+    if (segment_len < 0.0f) segment_len = 0.0f;
 
-    geometry_capsule_set_coord(player->m_collider, 0, 
-        (Vector3){
-                player->m_position.x,
-                player->m_position.y + rad,
-                player->m_position.z
-        });
-    geometry_capsule_set_coord(player->m_collider, 1,
-        (Vector3){
-                geometry_capsule_get_coord(player->m_collider, 0).x,
-                geometry_capsule_get_coord(player->m_collider, 0).y + col_len,
-                geometry_capsule_get_coord(player->m_collider, 0).z
-        });
+    Vector3 base = {
+        player->m_position.x,
+        player->m_position.y + rad,
+        player->m_position.z
+    };
+    Vector3 tip = {
+        base.x, base.y + segment_len, base.z
+    };
+    geometry_capsule_set_coord(player->m_collider, 0, base);
+    geometry_capsule_set_coord(player->m_collider, 1, tip);
 }
 
 Vector3 player_update_general(
