@@ -21,6 +21,8 @@ set(SOURCES
     src/core/collision/collision.c
     src/core/models/model_hdl.h
     src/core/models/model_hdl.c
+    src/physics/geometry.h
+    src/physics/geometry.c
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

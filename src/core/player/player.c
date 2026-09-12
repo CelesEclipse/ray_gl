@@ -1,6 +1,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "player.h"
+#include "raylib.h"
+#include "raymath.h"
 
 #define NAME_SIZE   50
 #define MAX_HP      100
@@ -27,7 +29,7 @@ struct Player
     float           m_rotation;
     bool            m_did_atk_this_tick;
     PlayerState_t   m_state;
-    BoundingBox     m_collider;
+    CapsuleCollider3D_t * m_collider;
 };
 
 Player_t * player_initialize(const char * name)
@@ -50,8 +52,8 @@ Player_t * player_initialize(const char * name)
     p->m_rotation = 0.0f;
     p->m_did_atk_this_tick = false;
     p->m_state = IDLE;
-    p->m_collider.min = (Vector3){-0.5f, 0.0f, -0.5f};
-    p->m_collider.max = (Vector3){0.5f, 2.0f, 0.5f};
+
+    p->m_collider = geometry_capsule_alloc();
     return p;
 }
 
@@ -111,9 +113,9 @@ bool player_get_did_attack(const Player_t * player)
     return player->m_did_atk_this_tick;
 }
 
-BoundingBox player_get_collider(const Player_t * player)
+CapsuleCollider3D_t * player_get_collider(const Player_t * player)
 {
-    if (player == NULL) return (BoundingBox){0};
+    if (player == NULL) return NULL;
     return player->m_collider;
 }
 
@@ -178,17 +180,21 @@ void player_update_collider(Player_t * player)
 {
     if (player == NULL) return;
 
-    player->m_collider.min = (Vector3){
-        player->m_position.x - 0.5f,
-        player->m_position.y,
-        player->m_position.z - 0.5f
-    };
+    float rad = geometry_capsule_get_radius(player->m_collider);
+    float col_len = geometry_capsule_calculate_height(player->m_collider);
 
-    player->m_collider.max = (Vector3){
-        player->m_position.x + 0.5f,
-        player->m_position.y + 2.0f,
-        player->m_position.z + 0.5f
-    };
+    geometry_capsule_set_coord(player->m_collider, 0, 
+        (Vector3){
+                player->m_position.x,
+                player->m_position.y + rad,
+                player->m_position.z
+        });
+    geometry_capsule_set_coord(player->m_collider, 1,
+        (Vector3){
+                geometry_capsule_get_coord(player->m_collider, 0).x,
+                geometry_capsule_get_coord(player->m_collider, 0).y + col_len,
+                geometry_capsule_get_coord(player->m_collider, 0).z
+        });
 }
 
 Vector3 player_update_general(

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "raylib.h"
-#include "raymath.h"
+#include "../../physics/geometry.h"
 
 typedef struct Player Player_t;
 
@@ -18,7 +18,7 @@ float       player_get_hp(const Player_t * player);
 int         player_get_state(const Player_t  * player);
 bool        player_is_dead(const Player_t * player);
 bool        player_get_did_attack(const Player_t * player);
-BoundingBox player_get_collider(const Player_t * player);
+CapsuleCollider3D_t * player_get_collider(const Player_t * player);
 BoundingBox player_get_hitbox(const Player_t * player);
 
 /* Setter functions */

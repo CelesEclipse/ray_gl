@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "core/models/model_hdl.h"
+#include "physics/geometry.h"
 #include "raylib.h"
 #include "raymath.h"
 
@@ -128,7 +129,8 @@ int main(void)
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
         player_normal_attack(pl, deltaTime);
         player_update_collider(pl);
-        BoundingBox player_collider_snapshot = player_get_collider(pl);
+        CapsuleCollider3D_t * player_collider_snapshot = player_get_collider(pl); 
+        CollisionResult_Capsule_t check_col;
         Vector3 pl_correction_total = {0};
 
         /* Enemy */
@@ -150,10 +152,11 @@ int main(void)
             enemy_update_collider(enemy_list[i]);
 
             if (enemy_get_did_attack(enemy_list[i])) {
-                if (collision_check_hitbox(
-                    enemy_get_hitbox(enemy_list[i], pl_pos),
-                    player_collider_snapshot
-                )) {
+                check_col = collision_resolve_capsule_box(
+                    player_collider_snapshot, 
+                    enemy_get_hitbox(enemy_list[i], pl_pos));
+                
+                if (check_col.penetration_depth > 0) {
                     player_take_damage(pl, 10.0f);
                 }
             }
@@ -168,12 +171,8 @@ int main(void)
             }
 
             // AABB 
-            CollisionResult_t col = collision_resolve_aabb(
-                player_collider_snapshot,
-                enemy_get_collider(enemy_list[i]),
-                movement
-            );
-            pl_correction_total = Vector3Add(pl_correction_total, col.c_correction);
+            Vector3 push = Vector3Scale(check_col.normal_vector, check_col.penetration_depth);
+            pl_correction_total = Vector3Add(pl_correction_total, push);
 
             // HUD preps
             enbox_list[i] = enemy_get_collider(enemy_list[i]);
@@ -198,7 +197,12 @@ int main(void)
 
                 if (show_circle) {
 #if MODEL_LOAD
-                    DrawBoundingBox(model_box, RED);
+                    DrawCapsule(
+                        geometry_capsule_get_coord(player_get_collider(pl), 0),
+                        geometry_capsule_get_coord(player_get_collider(pl), 1),
+                        geometry_capsule_get_radius(player_get_collider(pl)),
+                        8, 8, RED
+                    );
 #else
                     DrawBoundingBox(player_get_hitbox(pl), RED);
 #endif
