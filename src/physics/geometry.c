@@ -165,57 +165,43 @@ Vector3 geometry_closest_distance_seg2seg(Vector3 Abase, Vector3 Atip, Vector3 B
     // b . s - c . t = -e
     */
     Vector3 ret = Vector3Zero();
-    Vector3 w0 = Vector3Subtract(Bbase, Abase);
-    Vector3 u  = Vector3Subtract(Atip, Abase);
-    Vector3 v  = Vector3Subtract(Btip, Bbase);
-    float a = Vector3DotProduct(u, u);
-    float b = Vector3DotProduct(u, v);
-    float c = Vector3DotProduct(v, v);
-    float d = Vector3DotProduct(u, w0);
-    float e = Vector3DotProduct(v, w0);
-    
-    float D = a * c - b * b;
-    float s, t, s_nom, t_nom, t_denom;
+    Vector3 d1 = Vector3Subtract(Atip, Abase);
+    Vector3 d2 = Vector3Subtract(Btip, Bbase);
+    Vector3 r  = Vector3Subtract(Abase, Bbase);
+    float a = Vector3DotProduct(d1, d1);
+    float e = Vector3DotProduct(d2, d2);
+    float f = Vector3DotProduct(d2, r);
 
-    /* 2. Find the nearest point on an infinite line */
-    if (D <= FLT_EPSILON) {
-        // parallel
-        s_nom = 0.0f;
-        D = 1.0f;
-        t_nom = e;
-        t_denom = c;
-    } else {
-        s_nom = b * e - c * d;
-        t_nom = a * e - b * d;
-        t_denom = D;
-    }
+    float s, t;
 
-    /* 3. Clamping, hmm I will see, whether there's another way to shrink these messes */
-    if (s_nom < 0.0f) {
+    if (a <= FLT_EPSILON && e <= FLT_EPSILON) {
+        s = t = 0.0f;
+    } else if (a <= FLT_EPSILON) {
         s = 0.0f;
-        t_nom = e;
-        t_denom = c;
-    } else if (s_nom > D) {
-        s = 1.0f;
-        t_nom = e + b;
-        t_denom = c;
+        t = fmaxf(0.0f, fminf(1.0f, f / e));
     } else {
-        s = s_nom / D;
+        float c = Vector3DotProduct(d1, r);
+        if (e <= FLT_EPSILON) {
+            t = 0.0f;
+            s = fmaxf(0.0f, fminf(1.0f, -c / a));
+        } else {
+            float b = Vector3DotProduct(d1, d2);
+            float denom = a * e - b * b;
+            s = (denom != 0.0f) ? fmaxf(0.0f, fminf(1.0f, (b * f - c * e) / denom)) : 0.0f;
+            t = (b * s + f) / e;
+
+            if (t < 0.0f) {
+                t = 0.0f;
+                s = fmaxf(0.0f, fminf(1.0f, -c / a));
+            } else if (t > 1.0f) {
+                t = 1.0f;
+                s = fmaxf(0.0f, fminf(1.0f, (b - c) / a));
+            }
+        }
     }
 
-    // Fixed s, calculate t
-    if (t_nom < 0.0f) {
-        t = 0.0f;
-        s = fmaxf(0.0f, fminf(1.0f, - d / a));
-    } else if (t_nom > t_denom) {
-        t = 1.0f;
-        s = fmaxf(0.0f, fminf(1.0f, (b - d) / a));
-    } else {
-        t = t_nom / t_denom;
-    }
-
-    Vector3 Pmin = Vector3Add(Abase, Vector3Scale(u, s));
-    Vector3 Qmin = Vector3Add(Bbase, Vector3Scale(v, t));
+    Vector3 Pmin = Vector3Add(Abase, Vector3Scale(d1, s));
+    Vector3 Qmin = Vector3Add(Bbase, Vector3Scale(d2, t));
     ret = Vector3Subtract(Pmin, Qmin);
     return ret;
 }

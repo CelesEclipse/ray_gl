@@ -181,9 +181,9 @@ CollisionResult_Capsule_t collision_resolve_capsules(CapsuleCollider3D_t * capsu
     float target_dist = rad_1 + rad_2;
     float pd = target_dist - actual_dist;
 
-    if (pd <= 0.0f) {
+    if (pd < 0.0f) {
         goto errout;
-    } else if (pd == 0.0f) {
+    } else if (FloatEquals(pd, 0.0f)) {
         ret.normal_vector = (Vector3){0.0f, 1.0f, 0.0f};
         ret.penetration_depth = target_dist;
     } else {
