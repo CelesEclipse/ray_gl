@@ -41,6 +41,7 @@ int main(void)
     Player_t * pl = player_initialize("cuongbip");
     Enemy_t * enemy_list[ENEMY_NUM];
     Vector3 enpos_list[ENEMY_NUM];
+    Model enemy_models[ENEMY_NUM];
 
     for (int i = 0; i < ENEMY_NUM; ++i) {
         enemy_list[i] = enemy_initialize("hero");
@@ -69,6 +70,15 @@ int main(void)
     for (int i = 0; i < pl_model.materialCount; i++) {
         pl_model.materials[i].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     }
+
+    for (int i = 0; i < ENEMY_NUM; ++i) {
+        enemy_models[i] = LoadModel(MODEL_PATH);
+        for (int j = 0; j < enemy_models[i].materialCount; ++j) {
+            enemy_models[i].materials[j].maps[MATERIAL_MAP_DIFFUSE].color = GREEN;
+        }
+        enemy_models[i].transform = MatrixMultiply(enemy_models[i].transform, MatrixRotateX(-90.0f * DEG2RAD));
+    }
+
     pl_model.transform = MatrixMultiply(pl_model.transform, MatrixRotateX(-90.0f * DEG2RAD));
 #endif
 
@@ -123,7 +133,7 @@ int main(void)
 
         // 4: physical collision (player body vs each enemy BODY, not hitbox)
         for (int i = 0; i < ENEMY_NUM; ++i) {
-            CollisionResult_Capsule_t body_col = collision_resolve_capsule_box(
+            CollisionResult_Capsule_t body_col = collision_resolve_capsules(
                 player_collider_snapshot,
                 enemy_get_collider(enemy_list[i])
             );
@@ -140,13 +150,20 @@ int main(void)
                     player_collider_snapshot,
                     enemy_get_hitbox(enemy_list[i], pl_pos)
                 );
-                if (hit.penetration_depth > 0) {
+                if (hit.penetration_depth > 0.0f) {
                     player_take_damage(pl, 10.0f);
                 }
             }
 
             if (player_get_did_attack(pl)) {
-                if (collision_check_hitbox(player_get_hitbox(pl), enemy_get_collider(enemy_list[i]))) {
+                // if (collision_check_hitbox(player_get_hitbox(pl), enemy_get_collider(enemy_list[i]))) {
+                //     enemy_take_damage(enemy_list[i], 10.0f);
+                // }
+                CollisionResult_Capsule_t hit = collision_resolve_capsule_box(
+                    enemy_get_collider(enemy_list[i]), 
+                    player_get_hitbox(pl)
+                );
+                if (hit.penetration_depth > 0.0f) {
                     enemy_take_damage(enemy_list[i], 10.0f);
                 }
             }
@@ -159,7 +176,7 @@ int main(void)
         player_update_collider(pl);
 
         // 7: HUD display
-        BoundingBox enbox_list[ENEMY_NUM];
+        CapsuleCollider3D_t * enbox_list[ENEMY_NUM];
         float head_offset[ENEMY_NUM];
         Vector3 en_top_head[ENEMY_NUM];
         Vector2 en_screen_pos[ENEMY_NUM];
@@ -169,7 +186,7 @@ int main(void)
 
         for (int i = 0; i < ENEMY_NUM; ++i) {
             enbox_list[i] = enemy_get_collider(enemy_list[i]);
-            head_offset[i] = enbox_list[i].max.y - enpos_list[i].y;
+            head_offset[i] = geometry_capsule_get_coord(enbox_list[i], 1).y + geometry_capsule_get_radius(enbox_list[i]);
             en_top_head[i] = Vector3Add(enpos_list[i], (Vector3){0.0f, head_offset[i] + 0.3f, 0.0f});
             en_screen_pos[i] = GetWorldToScreen(en_top_head[i], camera);
             en_bar_x[i] = en_screen_pos[i].x - e1_bar_width / 2;
@@ -190,30 +207,45 @@ int main(void)
                         geometry_capsule_get_radius(player_get_collider(pl)),
                         8, 8, (Color){64, 224, 208, 255}
                     );
+                    for (int i = 0; i < ENEMY_NUM; ++i) {
+                        DrawCapsuleWires(
+                            geometry_capsule_get_coord(enemy_get_collider(enemy_list[i]), 0),
+                            geometry_capsule_get_coord(enemy_get_collider(enemy_list[i]), 1),
+                            geometry_capsule_get_radius(enemy_get_collider(enemy_list[i])),
+                            8, 8, ORANGE
+                        );
+                    }
 #else
                     DrawBoundingBox(player_get_hitbox(pl), RED);
-#endif
                     for (int i = 0; i < ENEMY_NUM; ++i) {
                         enemy_draw_detect_range(enemy_list[i]);
                         DrawBoundingBox(enemy_get_hitbox(enemy_list[i], pl_pos), RED);
                     }
+#endif
                 }
                 DrawGrid(50, 1.0f);
 
-                for (int i = 0; i < ENEMY_NUM; ++i) {
-                    if (!enemy_is_dead(enemy_list[i])) {
-                        DrawCube(enpos_list[i], 2.0f, 2.0f, 2.0f, GREEN);
-                    }
-                }
 #if MODEL_LOAD
                 Vector3 model_scale_vec = {150.0f, 150.0f, 150.0f};
                 Vector3 rotation_axis = {0.0f, 1.0f, 0.0f};
                 float facing_angle = pl_rotation;
                 DrawModelEx(pl_model, pl_pos, rotation_axis, facing_angle, model_scale_vec, WHITE);
+
+                for (int i = 0; i < ENEMY_NUM; ++i) {
+                    if (!enemy_is_dead(enemy_list[i])) {
+                        DrawModelEx(enemy_models[i], enpos_list[i], rotation_axis, facing_angle, model_scale_vec, ORANGE);
+                    }
+                }
 #else
                 DrawCylinderEx(pl_pos, Vector3Add(pl_pos, (Vector3){0, 2.0f, 0}), 0.6f, 0.6f, 16, BLUE);
                 Vector3 lookAtDir = {sinf(pl_rotation * DEG2RAD), 1.0f, cosf(pl_rotation * DEG2RAD)};
                 DrawSphere(Vector3Add(pl_pos, lookAtDir), 0.2f, GOLD);
+                
+                for (int i = 0; i < ENEMY_NUM; ++i) {
+                    if (!enemy_is_dead(enemy_list[i])) {
+                        DrawCube(enpos_list[i], 2.0f, 2.0f, 2.0f, GREEN);
+                    }
+                }
 #endif
 
             EndMode3D();
@@ -238,6 +270,9 @@ int main(void)
 
 #if MODEL_LOAD
     UnloadModel(pl_model);
+    for (int i = 0; i < ENEMY_NUM; ++i) {
+        UnloadModel(enemy_models[i]);
+    }
 #endif
 
     player_destroy(pl);

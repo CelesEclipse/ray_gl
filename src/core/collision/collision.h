@@ -20,7 +20,8 @@ CollisionResult_t collision_resolve_aabb(BoundingBox b1, BoundingBox b2, Vector3
 Vector3 collision_get_pushout(BoundingBox b1, BoundingBox b2);
 bool collision_check_hitbox(BoundingBox atk_hitbox, BoundingBox def_hurtbox);
 
-/* For capsule - sphere */
+/* For capsule - polygons */
 CollisionResult_Capsule_t collision_resolve_capsule_sphere(CapsuleCollider3D_t * capsule, SphereCollider_t * sphere);
 CollisionResult_Capsule_t collision_resolve_capsule_box(CapsuleCollider3D_t * capsule, BoundingBox box);
+CollisionResult_Capsule_t collision_resolve_capsules(CapsuleCollider3D_t * capsule1, CapsuleCollider3D_t * capsule2);
 

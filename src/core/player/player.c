@@ -3,10 +3,10 @@
 #include "player.h"
 #include "raylib.h"
 #include "raymath.h"
+#include "../../common/common.h"
 
 #define NAME_SIZE       50
 #define MAX_HP          100
-#define CAPSULE_HEIGHT  2.8f
 
 typedef enum
 {

@@ -158,3 +158,44 @@ CollisionResult_Capsule_t collision_resolve_capsule_box(CapsuleCollider3D_t * ca
         };
         return null_res;
 }
+
+/*
+Collision between capsule vs capsule
+*/
+CollisionResult_Capsule_t collision_resolve_capsules(CapsuleCollider3D_t * capsule1, CapsuleCollider3D_t * capsule2)
+{
+    if (!capsule1 || !capsule2) goto errout;
+
+    CollisionResult_Capsule_t ret;
+    float rad_1 = geometry_capsule_get_radius(capsule1);
+    float rad_2 = geometry_capsule_get_radius(capsule2);
+
+    Vector3 delta_vec = geometry_closest_distance_seg2seg(
+        geometry_capsule_get_coord(capsule1, 0),
+        geometry_capsule_get_coord(capsule1, 1),
+        geometry_capsule_get_coord(capsule2, 0),
+        geometry_capsule_get_coord(capsule2, 1)
+    );
+
+    float actual_dist = Vector3Length(delta_vec);
+    float target_dist = rad_1 + rad_2;
+    float pd = target_dist - actual_dist;
+
+    if (pd <= 0.0f) {
+        goto errout;
+    } else if (pd == 0.0f) {
+        ret.normal_vector = (Vector3){0.0f, 1.0f, 0.0f};
+        ret.penetration_depth = target_dist;
+    } else {
+        ret.normal_vector = Vector3Normalize(delta_vec);
+        ret.penetration_depth = pd;
+    }
+    return ret;
+
+    errout:
+        CollisionResult_Capsule_t null_res = {
+            .normal_vector = (Vector3){0.0f, 0.0f, 0.0f},
+            .penetration_depth = 0.0f
+        };
+        return null_res;
+}

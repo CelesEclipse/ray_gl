@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <float.h>
 #include <string.h>
 #include "geometry.h"
 #include "raylib.h"
@@ -144,5 +145,77 @@ Vector3 geometry_point_to_segment_projection(Vector3 point, Vector3 tip1, Vector
     t = fmaxf(0.0f, fminf(1.0f, t));
     ret = Vector3Add(tip1, Vector3Scale(dir_vec, t));
 
+    return ret;
+}
+
+/*
+Shortest Distance between two Line Segments algorithm
+- Segment S1 from P0 to P1 -> L1(s) = P0 + s . u (with 0 <= s <= 1, u = P1 - P0)
+- Segment S2 from Q0 to Q1 -> L2(s) = Q0 + t . v (with 0 <= t <= 1, v = Q1 - Q0)
+Need to find vector W(s, t) = L1(s) - L2(t) with s, t in [0, 1] 
+*/
+Vector3 geometry_closest_distance_seg2seg(Vector3 Abase, Vector3 Atip, Vector3 Bbase, Vector3 Btip)
+{
+    /* 1. system of linear equations
+    // W(s, t) . u = 0
+    // W(s, t) . v = 0
+
+    It becomes:
+    // a . s - b . t = -d
+    // b . s - c . t = -e
+    */
+    Vector3 ret = Vector3Zero();
+    Vector3 w0 = Vector3Subtract(Bbase, Abase);
+    Vector3 u  = Vector3Subtract(Atip, Abase);
+    Vector3 v  = Vector3Subtract(Btip, Bbase);
+    float a = Vector3DotProduct(u, u);
+    float b = Vector3DotProduct(u, v);
+    float c = Vector3DotProduct(v, v);
+    float d = Vector3DotProduct(u, w0);
+    float e = Vector3DotProduct(v, w0);
+    
+    float D = a * c - b * b;
+    float s, t, s_nom, t_nom, t_denom;
+
+    /* 2. Find the nearest point on an infinite line */
+    if (D <= FLT_EPSILON) {
+        // parallel
+        s_nom = 0.0f;
+        D = 1.0f;
+        t_nom = e;
+        t_denom = c;
+    } else {
+        s_nom = b * e - c * d;
+        t_nom = a * e - b * d;
+        t_denom = D;
+    }
+
+    /* 3. Clamping, hmm I will see, whether there's another way to shrink these messes */
+    if (s_nom < 0.0f) {
+        s = 0.0f;
+        t_nom = e;
+        t_denom = c;
+    } else if (s_nom > D) {
+        s = 1.0f;
+        t_nom = e + b;
+        t_denom = c;
+    } else {
+        s = s_nom / D;
+    }
+
+    // Fixed s, calculate t
+    if (t_nom < 0.0f) {
+        t = 0.0f;
+        s = fmaxf(0.0f, fminf(1.0f, - d / a));
+    } else if (t_nom > t_denom) {
+        t = 1.0f;
+        s = fmaxf(0.0f, fminf(1.0f, (b - d) / a));
+    } else {
+        t = t_nom / t_denom;
+    }
+
+    Vector3 Pmin = Vector3Add(Abase, Vector3Scale(u, s));
+    Vector3 Qmin = Vector3Add(Bbase, Vector3Scale(v, t));
+    ret = Vector3Subtract(Pmin, Qmin);
     return ret;
 }

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "enemy.h"
+#include "raymath.h"
+#include "../../common/common.h"
 
 #define NAME_SIZE   50
 #define MAX_HP      100
@@ -28,7 +30,7 @@ struct Enemy
     float           m_rotation;
     bool            m_did_atk_this_tick;
     EnemyState_t    m_state;
-    BoundingBox     m_collider;
+    CapsuleCollider3D_t * m_collider;
 };
 
 Enemy_t * enemy_initialize(const char * name)
@@ -52,6 +54,8 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_did_atk_this_tick = false;
     e->m_state = IDLE;
 
+    e->m_collider = geometry_capsule_alloc();
+    geometry_capsule_set_radius(e->m_collider, 1.0f);
     return e;
 }
 
@@ -124,9 +128,9 @@ BoundingBox enemy_get_hitbox(const Enemy_t * enemy, Vector3 player_pos)
     };
 }
 
-BoundingBox enemy_get_collider(const Enemy_t * enemy)
+CapsuleCollider3D_t * enemy_get_collider(const Enemy_t * enemy)
 {
-    if (enemy == NULL) return (BoundingBox){0};
+    if (enemy == NULL) return NULL;
     return enemy->m_collider;
 }
 
@@ -157,17 +161,20 @@ void enemy_update_collider(Enemy_t * enemy)
 {
     if (enemy == NULL) return;
 
-    enemy->m_collider.min = (Vector3){
-        enemy->m_position.x - 1.0f,
-        enemy->m_position.y - 1.0f,
-        enemy->m_position.z - 1.0f
-    };
+    float rad = geometry_capsule_get_radius(enemy->m_collider);
+    float segment_len = CAPSULE_HEIGHT - (2.0f * rad);
+    if (segment_len < 0.0f) segment_len = 0.0f;
 
-    enemy->m_collider.max = (Vector3){
-        enemy->m_position.x + 1.0f,
-        enemy->m_position.y + 1.0f,
-        enemy->m_position.z + 1.0f
+    Vector3 base = {
+        enemy->m_position.x,
+        enemy->m_position.y + rad,
+        enemy->m_position.z
     };
+    Vector3 tip = {
+        base.x, base.y + segment_len, base.z
+    };
+    geometry_capsule_set_coord(enemy->m_collider, 0, base);
+    geometry_capsule_set_coord(enemy->m_collider, 1, tip);
 }
 
 Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime)

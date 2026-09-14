@@ -32,3 +32,4 @@ float       geometry_sphere_get_radius(const SphereCollider_t * sphere);
 
 // Math functions
 Vector3 geometry_point_to_segment_projection(Vector3 point, Vector3 tip1, Vector3 tip2);
+Vector3 geometry_closest_distance_seg2seg(Vector3 Abase, Vector3 Atip, Vector3 Bbase, Vector3 Btip);
