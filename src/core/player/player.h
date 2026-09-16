@@ -3,6 +3,21 @@
 #include "raylib.h"
 #include "../../physics/geometry.h"
 
+typedef enum
+{
+    IDLE,
+    MOVING,
+    ATTACK,
+    DEAD
+} PlayerState_t;
+
+typedef enum
+{
+    ANIM_IDLE,
+    ANIM_WALK,
+    ANIM_RUN,
+} PlayerAnimState_t;
+
 typedef struct Player Player_t;
 
 Player_t * player_initialize(const char * name);
@@ -20,6 +35,8 @@ bool        player_is_dead(const Player_t * player);
 bool        player_get_did_attack(const Player_t * player);
 CapsuleCollider3D_t * player_get_collider(const Player_t * player);
 BoundingBox player_get_hitbox(const Player_t * player);
+int         player_get_anim_current(const Player_t * player);
+int         player_get_anim_frame(const Player_t * player);
 
 /* Setter functions */
 void        player_set_position(Player_t * player, Vector3 new_pos);
@@ -27,4 +44,6 @@ void        player_update_collider(Player_t * player);
 void        player_set_hp(Player_t * player, float hp);
 void        player_normal_attack(Player_t * player, float deltatime);
 void        player_take_damage(Player_t * player, float recv_dmg);
+void        player_set_anim(Player_t * player, int anim_idx);
+void        player_set_anim_frame(Player_t * player, int frame);
 Vector3     player_update_general(Player_t * player, float * out_rotation, float deltatime, Vector3 forward, Vector3 right);

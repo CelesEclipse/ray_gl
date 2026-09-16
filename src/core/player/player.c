@@ -8,14 +8,6 @@
 #define NAME_SIZE       50
 #define MAX_HP          100
 
-typedef enum
-{
-    IDLE,
-    MOVING,
-    ATTACK,
-    DEAD
-} PlayerState_t;
-
 struct Player
 {
     char            m_name[NAME_SIZE];
@@ -31,6 +23,8 @@ struct Player
     bool            m_did_atk_this_tick;
     PlayerState_t   m_state;
     CapsuleCollider3D_t * m_collider;
+    int             m_anim_current;
+    int             m_anim_frame;
 };
 
 Player_t * player_initialize(const char * name)
@@ -53,6 +47,8 @@ Player_t * player_initialize(const char * name)
     p->m_rotation = 0.0f;
     p->m_did_atk_this_tick = false;
     p->m_state = IDLE;
+    p->m_anim_current = ANIM_IDLE;
+    p->m_anim_frame = 0;
 
     p->m_collider = geometry_capsule_alloc();
     geometry_capsule_set_radius(p->m_collider, 1.0f);
@@ -135,6 +131,18 @@ BoundingBox player_get_hitbox(const Player_t * player)
     };
 }
 
+int player_get_anim_current(const Player_t * player)
+{
+    if (!player) return -1;
+    return player->m_anim_current;
+}
+
+int player_get_anim_frame(const Player_t * player)
+{
+    if (!player) return -1;
+    return player->m_anim_frame;
+}
+
 void player_set_position(Player_t * player, Vector3 new_pos)
 {
     if (player == NULL) return;
@@ -196,6 +204,21 @@ void player_update_collider(Player_t * player)
     };
     geometry_capsule_set_coord(player->m_collider, 0, base);
     geometry_capsule_set_coord(player->m_collider, 1, tip);
+}
+
+void player_set_anim(Player_t * player, int anim_idx)
+{
+    if (!player) return;
+    if (player->m_anim_current == anim_idx) return;
+
+    player->m_anim_current = anim_idx;
+    player->m_anim_frame = 0;
+}
+
+void player_set_anim_frame(Player_t * player, int frame)
+{
+    if (!player) return;
+    player->m_anim_frame = frame;
 }
 
 Vector3 player_update_general(

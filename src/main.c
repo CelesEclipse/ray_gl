@@ -11,7 +11,7 @@
 #include "core/collision/collision.h"
 #include "utils/utils.h"
 
-#define     MODEL_PATH      "../assets/raw_models/pl_model.glb"
+#define     MODEL_PATH      "../assets/raw_animations/pl_model_with_anim.glb"
 
 const int screenWidth = 1280;
 const int screenHeight = 720;
@@ -70,6 +70,15 @@ int main(void)
     for (int i = 0; i < pl_model.materialCount; i++) {
         pl_model.materials[i].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     }
+    int anim_count = 0;
+    ModelAnimation * animations = LoadModelAnimations(MODEL_PATH, &anim_count);
+    TraceLog(LOG_INFO, "Animation bone count: %d", animations[0].boneCount);
+    int idx_idle = -1, idx_walk = -1, idx_run = -1;
+    for (int i = 0; i < anim_count; ++i) {
+        if (TextIsEqual(animations[i].name, "idle")) idx_idle = i;
+        if (TextIsEqual(animations[i].name, "walk")) idx_walk = i;
+        if (TextIsEqual(animations[i].name, "run")) idx_run = i;
+    }
 
     for (int i = 0; i < ENEMY_NUM; ++i) {
         enemy_models[i] = LoadModel(MODEL_PATH);
@@ -111,6 +120,23 @@ int main(void)
 
         // 1. decide intent (no positions changed yet)
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
+#if MODEL_LOAD
+        int desired_anim = (player_get_state(pl) == MOVING) ? ANIM_WALK : ANIM_IDLE;
+        if (player_get_anim_current(pl) != desired_anim) {
+            player_set_anim(pl, desired_anim);
+        }
+
+        // Map enum to animations[] index, advance frame based on real elapsed time
+        int real_anim_idx = idx_idle;
+        if (player_get_anim_current(pl) == ANIM_WALK) real_anim_idx = idx_walk;
+        if (player_get_anim_current(pl) == ANIM_RUN) real_anim_idx = idx_run;
+        ModelAnimation current_clip = animations[real_anim_idx];
+        float clip_fps = current_clip.keyframeCount / (current_clip.keyframeCount / 60.0f);
+        int frame = 0;
+        frame = (frame + 1) % animations[0].keyframeCount;
+        player_set_anim_frame(pl, frame);
+        UpdateModelAnimation(pl_model, current_clip, frame);
+#endif
         player_normal_attack(pl, deltaTime);
 
         Vector3 enemy_movement[ENEMY_NUM];
@@ -156,9 +182,6 @@ int main(void)
             }
 
             if (player_get_did_attack(pl)) {
-                // if (collision_check_hitbox(player_get_hitbox(pl), enemy_get_collider(enemy_list[i]))) {
-                //     enemy_take_damage(enemy_list[i], 10.0f);
-                // }
                 CollisionResult_Capsule_t hit = collision_resolve_capsule_box(
                     enemy_get_collider(enemy_list[i]), 
                     player_get_hitbox(pl)
@@ -269,6 +292,7 @@ int main(void)
     }
 
 #if MODEL_LOAD
+    UnloadModelAnimations(animations, anim_count);
     UnloadModel(pl_model);
     for (int i = 0; i < ENEMY_NUM; ++i) {
         UnloadModel(enemy_models[i]);
