@@ -1,3 +1,9 @@
+#if defined (PLATFORM_DESKTOP)
+    #define GLSL_VERSION    330
+#else
+    #define GLSL_VERSION    100
+#endif
+
 #include <stdlib.h>
 #include <time.h>
 #include "core/models/model_hdl.h"
@@ -11,14 +17,17 @@
 #include "core/collision/collision.h"
 #include "utils/utils.h"
 
-#define     MODEL_PATH      "../assets/raw_animations/pl_model_with_anim.glb"
+#define SUPPORT_GPU_SKINNING    1
+
+#define     MODEL_PATH      "../assets/working_assets/xbot50_noapply.glb"
+#define     SKINNING_VS     "../assets/shaders/glsl330/skinning.vs"
+#define     SKINNING_FS     "../assets/shaders/glsl330/skinning.fs"
 
 const int screenWidth = 1280;
 const int screenHeight = 720;
 #define     PLAYER_MAXHP    100
 #define     ENEMY_MAXHP     120
 #define     DEBUG_KEY       0
-#define     MODEL_LOAD      1
 #define     ENEMY_NUM       5
 
 static Vector3 generate_random_vector(float min, float max)
@@ -65,21 +74,19 @@ int main(void)
     DisableCursor();
     SetTargetFPS(60);
 
-#if MODEL_LOAD
     Model pl_model = LoadModel(MODEL_PATH);
+
+#if SUPPORT_GPU_SKINNING
+    Shader skinning_shader = LoadShader(SKINNING_VS, SKINNING_FS);
+    TraceLog(LOG_INFO, "skinning shader id = %u", skinning_shader.id);
+    for (int i = 0; i < pl_model.materialCount; ++i) {
+        pl_model.materials[i].shader = skinning_shader;
+    }
+#endif
+
     for (int i = 0; i < pl_model.materialCount; i++) {
         pl_model.materials[i].maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     }
-    int anim_count = 0;
-    ModelAnimation * animations = LoadModelAnimations(MODEL_PATH, &anim_count);
-    TraceLog(LOG_INFO, "Animation bone count: %d", animations[0].boneCount);
-    int idx_idle = -1, idx_walk = -1, idx_run = -1;
-    for (int i = 0; i < anim_count; ++i) {
-        if (TextIsEqual(animations[i].name, "idle")) idx_idle = i;
-        if (TextIsEqual(animations[i].name, "walk")) idx_walk = i;
-        if (TextIsEqual(animations[i].name, "run")) idx_run = i;
-    }
-
     for (int i = 0; i < ENEMY_NUM; ++i) {
         enemy_models[i] = LoadModel(MODEL_PATH);
         for (int j = 0; j < enemy_models[i].materialCount; ++j) {
@@ -88,9 +95,17 @@ int main(void)
         enemy_models[i].transform = MatrixMultiply(enemy_models[i].transform, MatrixRotateX(-90.0f * DEG2RAD));
     }
 
-    pl_model.transform = MatrixMultiply(pl_model.transform, MatrixRotateX(-90.0f * DEG2RAD));
-#endif
+    int anim_count, walkidx = 0;
+    ModelAnimation * animations = LoadModelAnimations(MODEL_PATH, &anim_count);
+    for (int i = 1; i < anim_count; ++i) {
+        if (animations[i].keyframeCount > animations[walkidx].keyframeCount) {
+            walkidx = i;
+        }
+    }
 
+    pl_model.transform = MatrixMultiply(pl_model.transform, MatrixRotateX(-90.0f * DEG2RAD));
+    int anim_frame = 0;
+    /* Main loop */
     while (!WindowShouldClose()) {
         float deltaTime = GetFrameTime();
 
@@ -120,23 +135,12 @@ int main(void)
 
         // 1. decide intent (no positions changed yet)
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
-#if MODEL_LOAD
-        int desired_anim = (player_get_state(pl) == MOVING) ? ANIM_WALK : ANIM_IDLE;
-        if (player_get_anim_current(pl) != desired_anim) {
-            player_set_anim(pl, desired_anim);
-        }
 
-        // Map enum to animations[] index, advance frame based on real elapsed time
-        int real_anim_idx = idx_idle;
-        if (player_get_anim_current(pl) == ANIM_WALK) real_anim_idx = idx_walk;
-        if (player_get_anim_current(pl) == ANIM_RUN) real_anim_idx = idx_run;
-        ModelAnimation current_clip = animations[real_anim_idx];
-        float clip_fps = current_clip.keyframeCount / (current_clip.keyframeCount / 60.0f);
-        int frame = 0;
-        frame = (frame + 1) % animations[0].keyframeCount;
-        player_set_anim_frame(pl, frame);
-        UpdateModelAnimation(pl_model, current_clip, frame);
-#endif
+        /* single clip only — just advance and loop, no state-switching yet */
+        anim_frame = (anim_frame + 1) % animations[0].keyframeCount;
+        if (anim_frame >= animations[walkidx].keyframeCount) anim_frame = 0;
+        UpdateModelAnimation(pl_model, animations[walkidx], anim_frame);
+
         player_normal_attack(pl, deltaTime);
 
         Vector3 enemy_movement[ENEMY_NUM];
@@ -223,7 +227,6 @@ int main(void)
             BeginMode3D(camera);
 
                 if (show_circle) {
-#if MODEL_LOAD
                     DrawCapsuleWires(
                         geometry_capsule_get_coord(player_get_collider(pl), 0),
                         geometry_capsule_get_coord(player_get_collider(pl), 1),
@@ -238,20 +241,13 @@ int main(void)
                             8, 8, ORANGE
                         );
                     }
-#else
-                    DrawBoundingBox(player_get_hitbox(pl), RED);
-                    for (int i = 0; i < ENEMY_NUM; ++i) {
-                        enemy_draw_detect_range(enemy_list[i]);
-                        DrawBoundingBox(enemy_get_hitbox(enemy_list[i], pl_pos), RED);
-                    }
-#endif
                 }
                 DrawGrid(50, 1.0f);
 
-#if MODEL_LOAD
-                Vector3 model_scale_vec = {150.0f, 150.0f, 150.0f};
-                Vector3 rotation_axis = {0.0f, 1.0f, 0.0f};
+                Vector3 model_scale_vec = {1.0f, 1.0f, 1.0f};
+                Vector3 rotation_axis = {0.0f, 0.0f, 0.0f};
                 float facing_angle = pl_rotation;
+                TraceLog(LOG_INFO, "facing angle = %.2f", facing_angle);
                 DrawModelEx(pl_model, pl_pos, rotation_axis, facing_angle, model_scale_vec, WHITE);
 
                 for (int i = 0; i < ENEMY_NUM; ++i) {
@@ -259,17 +255,6 @@ int main(void)
                         DrawModelEx(enemy_models[i], enpos_list[i], rotation_axis, facing_angle, model_scale_vec, ORANGE);
                     }
                 }
-#else
-                DrawCylinderEx(pl_pos, Vector3Add(pl_pos, (Vector3){0, 2.0f, 0}), 0.6f, 0.6f, 16, BLUE);
-                Vector3 lookAtDir = {sinf(pl_rotation * DEG2RAD), 1.0f, cosf(pl_rotation * DEG2RAD)};
-                DrawSphere(Vector3Add(pl_pos, lookAtDir), 0.2f, GOLD);
-                
-                for (int i = 0; i < ENEMY_NUM; ++i) {
-                    if (!enemy_is_dead(enemy_list[i])) {
-                        DrawCube(enpos_list[i], 2.0f, 2.0f, 2.0f, GREEN);
-                    }
-                }
-#endif
 
             EndMode3D();
 
@@ -290,14 +275,15 @@ int main(void)
 
         EndDrawing();
     }
-
-#if MODEL_LOAD
+    
+#if SUPPORT_GPU_SKINNING
+    UnloadShader(skinning_shader);
+#endif
     UnloadModelAnimations(animations, anim_count);
     UnloadModel(pl_model);
     for (int i = 0; i < ENEMY_NUM; ++i) {
         UnloadModel(enemy_models[i]);
     }
-#endif
 
     player_destroy(pl);
     for (int i = 0; i < ENEMY_NUM; ++i) {
