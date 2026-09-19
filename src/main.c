@@ -6,7 +6,6 @@
 
 #include <stdlib.h>
 #include <time.h>
-#include "core/models/model_hdl.h"
 #include "physics/geometry.h"
 #include "raylib.h"
 #include "raymath.h"
@@ -171,6 +170,12 @@ int main(void)
             );
             if (body_col.penetration_depth > 0) {
                 Vector3 push = Vector3Scale(body_col.normal_vector, body_col.penetration_depth);
+
+                /*
+                    I just think about locking the Y-axis of the body-impact thrust force
+                    So it may fix the walk in the air bug when collision occured
+                */
+                push.y = 0.0f;
                 pl_correction_total = Vector3Add(pl_correction_total, push);
             }
         }
@@ -223,7 +228,6 @@ int main(void)
         }
 
         /* render */
-        BoundingBox model_box = model_get_scaled_bbox(pl_model, pl_pos, 150.0f, 0.5f);
         BeginDrawing();
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
