@@ -4,7 +4,7 @@ project(raylibshit C)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-set(RAYLIB_SRC_DIR "C:/raylib/raylib/src")
+set(RAYLIB_SRC_DIR "C:/raylibx/raylib/src")
 include_directories(${RAYLIB_SRC_DIR})
 
 set(SOURCES 

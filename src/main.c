@@ -1,7 +1,7 @@
 #if defined (PLATFORM_DESKTOP)
-    #define GLSL_VERSION    330
-#else
     #define GLSL_VERSION    100
+#else
+    #define GLSL_VERSION    330
 #endif
 
 #include <stdlib.h>
@@ -92,7 +92,6 @@ int main(void)
         for (int j = 0; j < enemy_models[i].materialCount; ++j) {
             enemy_models[i].materials[j].maps[MATERIAL_MAP_DIFFUSE].color = GREEN;
         }
-        enemy_models[i].transform = MatrixMultiply(enemy_models[i].transform, MatrixRotateX(-90.0f * DEG2RAD));
     }
 
     int anim_count, walkidx = 0;
@@ -103,7 +102,6 @@ int main(void)
         }
     }
 
-    pl_model.transform = MatrixMultiply(pl_model.transform, MatrixRotateX(-90.0f * DEG2RAD));
     int anim_frame = 0;
     /* Main loop */
     while (!WindowShouldClose()) {
@@ -136,9 +134,13 @@ int main(void)
         // 1. decide intent (no positions changed yet)
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
 
-        /* single clip only — just advance and loop, no state-switching yet */
-        anim_frame = (anim_frame + 1) % animations[0].keyframeCount;
-        if (anim_frame >= animations[walkidx].keyframeCount) anim_frame = 0;
+        /* Only advance the clip while the player is actually moving (WASD held).
+           When idle, hold on frame 0 instead of freezing mid-stride. */
+        if (player_get_state(pl) == MOVING) {
+            anim_frame = (anim_frame + 1) % animations[walkidx].keyframeCount;
+        } else {
+            anim_frame = 0;
+        }
         UpdateModelAnimation(pl_model, animations[walkidx], anim_frame);
 
         player_normal_attack(pl, deltaTime);
@@ -245,14 +247,14 @@ int main(void)
                 DrawGrid(50, 1.0f);
 
                 Vector3 model_scale_vec = {1.0f, 1.0f, 1.0f};
-                Vector3 rotation_axis = {0.0f, 0.0f, 0.0f};
+                Vector3 rotation_axis = {0.0f, 1.0f, 0.0f}; /* yaw is a rotation about Y, not a zero vector */
                 float facing_angle = pl_rotation;
-                TraceLog(LOG_INFO, "facing angle = %.2f", facing_angle);
                 DrawModelEx(pl_model, pl_pos, rotation_axis, facing_angle, model_scale_vec, WHITE);
 
                 for (int i = 0; i < ENEMY_NUM; ++i) {
                     if (!enemy_is_dead(enemy_list[i])) {
-                        DrawModelEx(enemy_models[i], enpos_list[i], rotation_axis, facing_angle, model_scale_vec, ORANGE);
+                        float enemy_facing_angle = enemy_get_rotation(enemy_list[i]);
+                        DrawModelEx(enemy_models[i], enpos_list[i], rotation_axis, enemy_facing_angle, model_scale_vec, ORANGE);
                     }
                 }
 
