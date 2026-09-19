@@ -1,5 +1,3 @@
-#include <stdlib.h>
-#include <string.h>
 #include <raylib.h>
 #include <raymath.h>
 #include "collision.h"
@@ -183,7 +181,7 @@ CollisionResult_Capsule_t collision_resolve_capsules(CapsuleCollider3D_t * capsu
 
     if (pd < 0.0f) {
         goto errout;
-    } else if (FloatEquals(pd, 0.0f)) {
+    } else if (FloatEquals(actual_dist, 0.0f)) {
         ret.normal_vector = (Vector3){0.0f, 1.0f, 0.0f};
         ret.penetration_depth = target_dist;
     } else {

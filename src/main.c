@@ -170,12 +170,6 @@ int main(void)
             );
             if (body_col.penetration_depth > 0) {
                 Vector3 push = Vector3Scale(body_col.normal_vector, body_col.penetration_depth);
-
-                /*
-                    I just think about locking the Y-axis of the body-impact thrust force
-                    So it may fix the walk in the air bug when collision occured
-                */
-                push.y = 0.0f;
                 pl_correction_total = Vector3Add(pl_correction_total, push);
             }
         }
