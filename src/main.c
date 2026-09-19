@@ -19,7 +19,7 @@
 
 #define SUPPORT_GPU_SKINNING    1
 
-#define     MODEL_PATH      "../assets/working_assets/xbot50_noapply.glb"
+#define     MODEL_PATH      "../assets/working_assets/xbot51.glb"
 #define     SKINNING_VS     "../assets/shaders/glsl330/skinning.vs"
 #define     SKINNING_FS     "../assets/shaders/glsl330/skinning.fs"
 
