@@ -40,6 +40,7 @@ int         player_get_anim_frame(const Player_t * player);
 
 /* Setter functions */
 void        player_set_position(Player_t * player, Vector3 new_pos);
+void        player_set_sprint(Player_t * player, bool sprint);
 void        player_update_collider(Player_t * player);
 void        player_set_hp(Player_t * player, float hp);
 void        player_normal_attack(Player_t * player, float deltatime);

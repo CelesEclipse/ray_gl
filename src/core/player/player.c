@@ -150,6 +150,17 @@ void player_set_position(Player_t * player, Vector3 new_pos)
     player->m_position = new_pos;
 }
 
+void player_set_sprint(Player_t * player, bool sprint)
+{
+    // hmm, just hard-coded for now
+    if (!player) return;
+    if (sprint) {
+        player->m_speed = 18.0f;
+    } else {
+        player->m_speed = 8.0f;
+    }
+}
+
 void player_set_hp(Player_t * player, float hp)
 {
     if (player == NULL) return;

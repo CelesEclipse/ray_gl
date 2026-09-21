@@ -94,7 +94,7 @@ int main(void)
         }
     }
     
-    int anim_count, idleidx, walkidx, runidx = 0;
+    int anim_count = 0, idleidx = 0, walkidx = 0, runidx = 0;
     ModelAnimation * animations = LoadModelAnimations(MODEL_PATH, &anim_count);
     for (int i = 0; i < anim_count; ++i) {
         if (strstr(animations[i].name, "Idle"))     idleidx = i;
@@ -133,7 +133,11 @@ int main(void)
 
         // 1. decide intent (no positions changed yet)
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
-        player_set_anim(pl, (player_get_state(pl) == MOVING) ? ANIM_RUN : ANIM_WALK);
+        
+        bool sprinting = IsKeyDown(KEY_LEFT_SHIFT);
+        player_set_sprint(pl, sprinting);
+        
+        player_set_anim(pl, (player_get_state(pl) != MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
         int clip = idleidx;
         switch (player_get_anim_current(pl)) {
             case ANIM_WALK: clip = walkidx; break;
