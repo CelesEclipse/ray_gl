@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "enemy.h"
+#include "raylib.h"
 #include "raymath.h"
 #include "../../common/common.h"
 
@@ -217,7 +218,8 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
     if (distance > stop_distance) {
         enemy->m_state = E_MOVING;
         Vector3 direction = Vector3Normalize(dist);
-
+        enemy->m_rotation = atan2f(direction.x, direction.z) * RAD2DEG;
+        
         return Vector3Scale(
             direction,
             enemy->m_speed * deltatime

@@ -30,6 +30,8 @@ const int screenHeight = 720;
 #define     ENEMY_MAXHP     120
 #define     DEBUG_KEY       0
 #define     ENEMY_NUM       5
+#define     ENEMY_SPRINT_DIST_ENTER   7.0f
+#define     ENEMY_SPRINT_DIST_EXIT    5.0f
 
 static Vector3 generate_random_vector(float min, float max)
 {
@@ -160,8 +162,32 @@ int main(void)
 
         Vector3 enemy_movement[ENEMY_NUM];
         for (int i = 0; i < ENEMY_NUM; ++i) {
+            float dist_to_pl = Vector3Distance(pl_pos, enpos_list[i]);
+            bool was_sprinting = enemy_get_speed(enemy_list[i]) > 10.0f;
+            bool en_sprinting = was_sprinting
+                ? (dist_to_pl > ENEMY_SPRINT_DIST_EXIT)
+                : (dist_to_pl > ENEMY_SPRINT_DIST_ENTER);
+            enemy_set_sprint(enemy_list[i], en_sprinting);
+
             enemy_movement[i] = enemy_update_general(enemy_list[i], pl_pos, deltaTime);
             enemy_normal_attack(enemy_list[i], deltaTime);
+
+            // Same as player but array
+            enemy_set_anim(enemy_list[i],
+                (enemy_get_state(enemy_list[i]) == E_MOVING)
+                ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
+                : ANIM_IDLE);
+            int clip = idleidx;
+            switch (enemy_get_anim_current(enemy_list[i])) {
+                case ANIM_WALK: clip = walkidx; break;
+                case ANIM_RUN:  clip = runidx;  break;
+                default:        clip = idleidx; break;
+            }
+
+            int frame = enemy_get_anim_frame(enemy_list[i]);
+            frame = (enemy_get_anim_current(enemy_list[i]) != ANIM_IDLE)
+                ? (frame + 1) % animations[clip].keyframeCount : 0;
+            enemy_set_anim_frame(enemy_list[i], frame);
         }
 
         // 2: apply enemy movement + refresh enemy colliders
@@ -266,6 +292,13 @@ int main(void)
 
                 for (int i = 0; i < ENEMY_NUM; ++i) {
                     if (!enemy_is_dead(enemy_list[i])) {
+                        int clip = idleidx;
+                        switch (enemy_get_anim_current(enemy_list[i])) {
+                            case ANIM_WALK: clip = walkidx; break;
+                            case ANIM_RUN:  clip = runidx;  break;
+                            default:        clip = idleidx; break;
+                        }
+                        UpdateModelAnimation(enemy_models[i], animations[clip], enemy_get_anim_frame(enemy_list[i]));
                         float enemy_facing_angle = enemy_get_rotation(enemy_list[i]);
                         DrawModelEx(enemy_models[i], enpos_list[i], rotation_axis, enemy_facing_angle, model_scale_vec, ORANGE);
                     }
