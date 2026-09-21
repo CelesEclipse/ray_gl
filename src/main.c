@@ -20,7 +20,7 @@
 
 #define SUPPORT_GPU_SKINNING    1
 
-#define     MODEL_PATH      "../assets/working_assets/xbot62.glb"
+#define     MODEL_PATH      "../assets/working_assets/xbot63.glb"
 #define     SKINNING_VS     "../assets/shaders/glsl330/skinning.vs"
 #define     SKINNING_FS     "../assets/shaders/glsl330/skinning.fs"
 
@@ -97,12 +97,13 @@ int main(void)
         }
     }
     
-    int anim_count = 0, idleidx = 0, walkidx = 0, runidx = 0;
+    int anim_count = 0, idleidx = 0, walkidx = 0, runidx = 0, deathidx = 0;
     ModelAnimation * animations = LoadModelAnimations(MODEL_PATH, &anim_count);
     for (int i = 0; i < anim_count; ++i) {
         if (strstr(animations[i].name, "Idle"))     idleidx = i;
         if (strstr(animations[i].name, "Walk"))     walkidx = i;
         if (strstr(animations[i].name, "Run"))      runidx = i;
+        if (strstr(animations[i].name, "Death"))    deathidx = i;
     }
 
     int anim_frame = 0;
@@ -140,13 +141,19 @@ int main(void)
         bool sprinting = IsKeyDown(KEY_LEFT_SHIFT);
         player_set_sprint(pl, sprinting);
         
-        player_set_anim(pl, (player_get_state(pl) != P_MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
+        if (!player_is_dead(pl)) {
+            player_set_anim(pl, (player_get_state(pl) != P_MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
+        } else {
+            player_set_anim(pl, deathidx);
+        }
+        
         int clip = idleidx;
         switch (player_get_anim_current(pl)) {
-            case ANIM_WALK: clip = walkidx; break;
-            case ANIM_RUN:  clip = runidx;  break;
+            case ANIM_WALK:     clip = walkidx;     break;
+            case ANIM_RUN:      clip = runidx;      break;
+            case ANIM_DEATH:    clip = deathidx;    break;
             case ANIM_IDLE:
-            default:        clip = idleidx;  break;
+            default:            clip = idleidx;     break;
         }
 
         /* Only advance the clip while the player is actually moving (WASD held).
@@ -173,15 +180,21 @@ int main(void)
             enemy_normal_attack(enemy_list[i], deltaTime);
 
             // Same as player but array
-            enemy_set_anim(enemy_list[i],
-                (enemy_get_state(enemy_list[i]) == E_MOVING)
-                ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
-                : ANIM_IDLE);
+            if (!enemy_is_dead(enemy_list[i])) {
+                enemy_set_anim(enemy_list[i],
+                    (enemy_get_state(enemy_list[i]) == E_MOVING)
+                    ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
+                    : ANIM_IDLE);
+            } else {
+                enemy_set_anim(enemy_list[i], deathidx);
+            }
+
             int clip = idleidx;
             switch (enemy_get_anim_current(enemy_list[i])) {
-                case ANIM_WALK: clip = walkidx; break;
-                case ANIM_RUN:  clip = runidx;  break;
-                default:        clip = idleidx; break;
+                case ANIM_WALK:     clip = walkidx;     break;
+                case ANIM_RUN:      clip = runidx;      break;
+                case ANIM_DEATH:    clip = deathidx;    break;
+                default:            clip = idleidx;     break;
             }
 
             int frame = enemy_get_anim_frame(enemy_list[i]);
