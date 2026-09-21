@@ -8,14 +8,6 @@
 #define NAME_SIZE   50
 #define MAX_HP      100
 
-typedef enum
-{
-    IDLE,
-    MOVING,
-    ATTACK,
-    DEAD
-} EnemyState_t;
-
 struct Enemy
 {
     char            m_name[NAME_SIZE];
@@ -31,6 +23,8 @@ struct Enemy
     bool            m_did_atk_this_tick;
     EnemyState_t    m_state;
     CapsuleCollider3D_t * m_collider;
+    int             m_anim_current;
+    int             m_anim_frame;
 };
 
 Enemy_t * enemy_initialize(const char * name)
@@ -43,7 +37,7 @@ Enemy_t * enemy_initialize(const char * name)
 
     /* Other features */
     e->m_position = (Vector3){0.0f, 1.0f, -5.0f};
-    e->m_speed = 5.0f;
+    e->m_speed = 6.0f;
     e->m_hp = 88.2f;
     e->m_atk_speed = 1.0f;
     e->m_atk_timer = 0.0f;
@@ -52,7 +46,9 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_detect_range = 10.0f;
     e->m_rotation = 0.0f;
     e->m_did_atk_this_tick = false;
-    e->m_state = IDLE;
+    e->m_state = E_IDLE;
+    e->m_anim_current = ANIM_IDLE;
+    e->m_anim_frame = 0;
 
     e->m_collider = geometry_capsule_alloc();
     geometry_capsule_set_radius(e->m_collider, 1.0f);
@@ -106,7 +102,7 @@ int enemy_get_state(const Enemy_t * enemy)
 bool enemy_is_dead(const Enemy_t * enemy)
 {
     if (enemy == NULL) return false;
-    return enemy->m_state == DEAD;
+    return enemy->m_state == E_DEAD;
 }
 
 bool enemy_get_did_attack(const Enemy_t * enemy)
@@ -128,6 +124,19 @@ BoundingBox enemy_get_hitbox(const Enemy_t * enemy, Vector3 player_pos)
     };
 }
 
+int enemy_get_anim_current(const Enemy_t * enemy)
+{
+    if (!enemy) return -1;
+    return enemy->m_anim_current;
+}
+
+int enemy_get_anim_frame(const Enemy_t * enemy)
+{
+    if (!enemy) return -1;
+    return enemy->m_anim_frame;
+}
+
+
 CapsuleCollider3D_t * enemy_get_collider(const Enemy_t * enemy)
 {
     if (enemy == NULL) return NULL;
@@ -138,6 +147,17 @@ void enemy_set_position(Enemy_t * enemy, Vector3 new_pos)
 {
     if (enemy == NULL) return;
     enemy->m_position = new_pos;
+}
+
+void enemy_set_sprint(Enemy_t * enemy, bool sprint)
+{
+    // hmm, just hard-coded for now
+    if (!enemy) return;
+    if (sprint) {
+        enemy->m_speed = 16.0f;
+    } else {
+        enemy->m_speed = 6.0f;
+    }
 }
 
 void enemy_set_hp(Enemy_t * enemy, float hp)
@@ -153,7 +173,7 @@ void enemy_take_damage(Enemy_t * enemy, float amount)
     enemy->m_hp -= amount;
 
     if (enemy->m_hp <= 0) {
-        enemy->m_state = DEAD;
+        enemy->m_state = E_DEAD;
     }
 }
 
@@ -181,7 +201,7 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
 {
     /* Same as player */
     if (enemy == NULL) return (Vector3){0};
-    if (enemy->m_state == DEAD) return (Vector3){0};
+    if (enemy->m_state == E_DEAD) return (Vector3){0};
 
     Vector3 dist = Vector3Subtract(player_pos, enemy->m_position);
     float distance = Vector3Length(dist);
@@ -190,12 +210,12 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
     // to prevent enemies from advancing near contact range
     float stop_distance = enemy->m_atk_range + 1.0f + 0.5f;
     if (distance > enemy->m_detect_range) {
-        enemy->m_state = IDLE;
+        enemy->m_state = E_IDLE;
         return (Vector3){0};
     }
 
     if (distance > stop_distance) {
-        enemy->m_state = MOVING;
+        enemy->m_state = E_MOVING;
         Vector3 direction = Vector3Normalize(dist);
 
         return Vector3Scale(
@@ -204,7 +224,7 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
         );
     }
 
-    enemy->m_state = ATTACK;
+    enemy->m_state = E_ATTACK;
     // should not call here
 
     return (Vector3){0};
@@ -213,7 +233,7 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
 void enemy_normal_attack(Enemy_t * enemy, float deltatime)
 {
     if (enemy == NULL) return;
-    if (enemy->m_state != ATTACK) return;
+    if (enemy->m_state != E_ATTACK) return;
 
     enemy->m_atk_timer += deltatime;
     float atk_interval = 1.0f / enemy->m_atk_speed;
@@ -224,6 +244,21 @@ void enemy_normal_attack(Enemy_t * enemy, float deltatime)
     } else {
         enemy->m_did_atk_this_tick = false;
     }
+}
+
+void enemy_set_anim(Enemy_t * enemy, int anim_idx)
+{
+    if (!enemy) return;
+    if (enemy->m_anim_current == anim_idx) return;
+
+    enemy->m_anim_current = anim_idx;
+    enemy->m_anim_frame = 0;
+}
+
+void enemy_set_anim_frame(Enemy_t * enemy, int frame)
+{
+    if (!enemy) return;
+    enemy->m_anim_frame = frame;
 }
 
 void enemy_draw_detect_range(Enemy_t * enemy)

@@ -46,7 +46,7 @@ Player_t * player_initialize(const char * name)
     p->m_atk_dmg = 20.0f;
     p->m_rotation = 0.0f;
     p->m_did_atk_this_tick = false;
-    p->m_state = IDLE;
+    p->m_state = P_IDLE;
     p->m_anim_current = ANIM_IDLE;
     p->m_anim_frame = 0;
 
@@ -67,12 +67,6 @@ Vector3 player_get_position(const Player_t * player)
 {
     if (player == NULL) return Vector3Zero();
     return player->m_position;
-}
-
-Vector3 player_get_direction(const Player_t * player)
-{
-    if (player == NULL) return Vector3Zero();
-    return player->m_direction;
 }
 
 float player_get_speed(const Player_t * player)
@@ -102,7 +96,7 @@ int player_get_state(const Player_t * player)
 bool player_is_dead(const Player_t * player)
 {
     if (player == NULL) return false;
-    return player->m_state == DEAD;
+    return player->m_state == P_DEAD;
 }
 
 bool player_get_did_attack(const Player_t * player)
@@ -171,7 +165,7 @@ void player_set_hp(Player_t * player, float hp)
 void player_normal_attack(Player_t * player, float deltatime)
 {
     if (player == NULL) return;
-    if (player->m_state == DEAD) return;
+    if (player->m_state == P_DEAD) return;
 
     player->m_atk_timer += deltatime;
 
@@ -179,7 +173,7 @@ void player_normal_attack(Player_t * player, float deltatime)
         float atk_interval = 1.0f / player->m_atk_speed;
         if (player->m_atk_timer >= atk_interval) {
             player->m_atk_timer = 0.0f;
-            player->m_state = ATTACK;
+            player->m_state = P_ATTACK;
             player->m_did_atk_this_tick = true;
         } else {
             player->m_did_atk_this_tick = false;
@@ -194,7 +188,7 @@ void player_take_damage(Player_t * player, float recv_dmg)
     if (player == NULL) return;
     player->m_hp -= recv_dmg;
     if (player->m_hp < 0) player->m_hp = 0;
-    if (player->m_hp <= 0) player->m_state = DEAD;
+    if (player->m_hp <= 0) player->m_state = P_DEAD;
 }
 
 void player_update_collider(Player_t * player)
@@ -242,7 +236,7 @@ Vector3 player_update_general(
 {
     /* Refactor, return movement instead of synch between struct and main */
     if (player == NULL || out_rotation == NULL) return (Vector3){0};
-    if (player->m_state == DEAD)    return (Vector3){0};
+    if (player->m_state == P_DEAD)    return (Vector3){0};
 
     Vector3 moveDirection = {0};
 
@@ -260,7 +254,7 @@ Vector3 player_update_general(
         *out_rotation = atan2f(moveDirection.x, moveDirection.z) * RAD2DEG;
 
         player->m_rotation = *out_rotation;
-        player->m_state = MOVING;
+        player->m_state = P_MOVING;
 
         return Vector3Scale(
             moveDirection,
@@ -268,6 +262,6 @@ Vector3 player_update_general(
         );
     }
 
-    player->m_state = IDLE;
+    player->m_state = P_IDLE;
     return (Vector3){0};
 }

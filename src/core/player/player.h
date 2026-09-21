@@ -5,18 +5,11 @@
 
 typedef enum
 {
-    IDLE,
-    MOVING,
-    ATTACK,
-    DEAD
+    P_IDLE,
+    P_MOVING,
+    P_ATTACK,
+    P_DEAD
 } PlayerState_t;
-
-typedef enum
-{
-    ANIM_IDLE,
-    ANIM_WALK,
-    ANIM_RUN,
-} PlayerAnimState_t;
 
 typedef struct Player Player_t;
 
@@ -25,7 +18,6 @@ void player_destroy(Player_t * player);
 
 /* Getter functions */
 Vector3     player_get_position(const Player_t * player);
-Vector3     player_get_direction(const Player_t * player);
 float       player_get_speed(const Player_t * player);
 float       player_get_rotation(const Player_t * player);
 float       player_get_maxhp(const Player_t * player);

@@ -11,6 +11,7 @@
 #include "raylib.h"
 #include "raymath.h"
 
+#include "common/common.h"
 #include "core/player/player.h"
 #include "core/enemies/enemy.h"
 #include "core/hud/ui.h"
@@ -137,7 +138,7 @@ int main(void)
         bool sprinting = IsKeyDown(KEY_LEFT_SHIFT);
         player_set_sprint(pl, sprinting);
         
-        player_set_anim(pl, (player_get_state(pl) != MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
+        player_set_anim(pl, (player_get_state(pl) != P_MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
         int clip = idleidx;
         switch (player_get_anim_current(pl)) {
             case ANIM_WALK: clip = walkidx; break;
@@ -247,6 +248,7 @@ int main(void)
                         8, 8, (Color){64, 224, 208, 255}
                     );
                     for (int i = 0; i < ENEMY_NUM; ++i) {
+                        enemy_draw_detect_range(enemy_list[i]);
                         DrawCapsuleWires(
                             geometry_capsule_get_coord(enemy_get_collider(enemy_list[i]), 0),
                             geometry_capsule_get_coord(enemy_get_collider(enemy_list[i]), 1),
