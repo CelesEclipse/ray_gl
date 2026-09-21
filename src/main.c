@@ -5,6 +5,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include "physics/geometry.h"
 #include "raylib.h"
@@ -18,7 +19,7 @@
 
 #define SUPPORT_GPU_SKINNING    1
 
-#define     MODEL_PATH      "../assets/working_assets/xbot51.glb"
+#define     MODEL_PATH      "../assets/working_assets/xbot62.glb"
 #define     SKINNING_VS     "../assets/shaders/glsl330/skinning.vs"
 #define     SKINNING_FS     "../assets/shaders/glsl330/skinning.fs"
 
@@ -92,13 +93,13 @@ int main(void)
             enemy_models[i].materials[j].maps[MATERIAL_MAP_DIFFUSE].color = GREEN;
         }
     }
-
-    int anim_count, walkidx = 0;
+    
+    int anim_count, idleidx, walkidx, runidx = 0;
     ModelAnimation * animations = LoadModelAnimations(MODEL_PATH, &anim_count);
-    for (int i = 1; i < anim_count; ++i) {
-        if (animations[i].keyframeCount > animations[walkidx].keyframeCount) {
-            walkidx = i;
-        }
+    for (int i = 0; i < anim_count; ++i) {
+        if (strstr(animations[i].name, "Idle"))     idleidx = i;
+        if (strstr(animations[i].name, "Walk"))     walkidx = i;
+        if (strstr(animations[i].name, "Run"))      runidx = i;
     }
 
     int anim_frame = 0;
@@ -132,15 +133,23 @@ int main(void)
 
         // 1. decide intent (no positions changed yet)
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
+        player_set_anim(pl, (player_get_state(pl) == MOVING) ? ANIM_RUN : ANIM_WALK);
+        int clip = idleidx;
+        switch (player_get_anim_current(pl)) {
+            case ANIM_WALK: clip = walkidx; break;
+            case ANIM_RUN:  clip = runidx;  break;
+            case ANIM_IDLE:
+            default:        clip = idleidx;  break;
+        }
 
         /* Only advance the clip while the player is actually moving (WASD held).
            When idle, hold on frame 0 instead of freezing mid-stride. */
-        if (player_get_state(pl) == MOVING) {
-            anim_frame = (anim_frame + 1) % animations[walkidx].keyframeCount;
+        if (player_get_anim_current(pl) != ANIM_IDLE) {
+            anim_frame = (anim_frame + 1) % animations[clip].keyframeCount; 
         } else {
             anim_frame = 0;
         }
-        UpdateModelAnimation(pl_model, animations[walkidx], anim_frame);
+        UpdateModelAnimation(pl_model, animations[clip], anim_frame);
 
         player_normal_attack(pl, deltaTime);
 
