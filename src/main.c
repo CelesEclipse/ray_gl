@@ -144,7 +144,7 @@ int main(void)
         if (!player_is_dead(pl)) {
             player_set_anim(pl, (player_get_state(pl) != P_MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
         } else {
-            player_set_anim(pl, deathidx);
+            player_set_anim(pl, ANIM_DEATH);
         }
         
         int clip = idleidx;
@@ -157,12 +157,17 @@ int main(void)
         }
 
         /* Only advance the clip while the player is actually moving (WASD held).
-           When idle, hold on frame 0 instead of freezing mid-stride. */
-        if (player_get_anim_current(pl) != ANIM_IDLE) {
-            anim_frame = (anim_frame + 1) % animations[clip].keyframeCount; 
+           When idle, hold on frame 0 instead of freezing mid-stride.
+           Check for death
+        */
+        if (player_get_anim_current(pl) == ANIM_DEATH) {
+            if (anim_frame < animations[clip].keyframeCount - 1) anim_frame++;
+        } else if (player_get_anim_current(pl) != ANIM_IDLE) {
+            anim_frame = (anim_frame + 1) % animations[clip].keyframeCount;
         } else {
             anim_frame = 0;
         }
+
         UpdateModelAnimation(pl_model, animations[clip], anim_frame);
 
         player_normal_attack(pl, deltaTime);
@@ -186,7 +191,7 @@ int main(void)
                     ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
                     : ANIM_IDLE);
             } else {
-                enemy_set_anim(enemy_list[i], deathidx);
+                enemy_set_anim(enemy_list[i], ANIM_DEATH);
             }
 
             int clip = idleidx;
@@ -198,8 +203,13 @@ int main(void)
             }
 
             int frame = enemy_get_anim_frame(enemy_list[i]);
-            frame = (enemy_get_anim_current(enemy_list[i]) != ANIM_IDLE)
-                ? (frame + 1) % animations[clip].keyframeCount : 0;
+            if (enemy_get_anim_current(enemy_list[i]) == ANIM_DEATH) {
+                if (frame < animations[clip].keyframeCount - 1) frame++;
+            } else if (enemy_get_anim_current(enemy_list[i]) != ANIM_IDLE) {
+                frame = (frame + 1) % animations[clip].keyframeCount;
+            } else {
+                frame = 0;
+            }
             enemy_set_anim_frame(enemy_list[i], frame);
         }
 
@@ -300,21 +310,20 @@ int main(void)
 
                 Vector3 model_scale_vec = {1.0f, 1.0f, 1.0f};
                 Vector3 rotation_axis = {0.0f, 1.0f, 0.0f}; /* yaw is a rotation about Y, not a zero vector */
-                float facing_angle = pl_rotation;
+                float facing_angle = player_get_rotation(pl);
                 DrawModelEx(pl_model, pl_pos, rotation_axis, facing_angle, model_scale_vec, WHITE);
 
                 for (int i = 0; i < ENEMY_NUM; ++i) {
-                    if (!enemy_is_dead(enemy_list[i])) {
                         int clip = idleidx;
                         switch (enemy_get_anim_current(enemy_list[i])) {
-                            case ANIM_WALK: clip = walkidx; break;
-                            case ANIM_RUN:  clip = runidx;  break;
-                            default:        clip = idleidx; break;
+                            case ANIM_WALK:     clip = walkidx;     break;
+                            case ANIM_RUN:      clip = runidx;      break;
+                            case ANIM_DEATH:    clip = deathidx;    break;
+                            default:            clip = idleidx;     break;
                         }
                         UpdateModelAnimation(enemy_models[i], animations[clip], enemy_get_anim_frame(enemy_list[i]));
                         float enemy_facing_angle = enemy_get_rotation(enemy_list[i]);
                         DrawModelEx(enemy_models[i], enpos_list[i], rotation_axis, enemy_facing_angle, model_scale_vec, ORANGE);
-                    }
                 }
 
             EndMode3D();
