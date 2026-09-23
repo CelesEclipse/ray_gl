@@ -20,7 +20,7 @@
 
 #define SUPPORT_GPU_SKINNING    1
 
-#define     MODEL_PATH      "../assets/working_assets/xbot63.glb"
+#define     MODEL_PATH      "../assets/working_assets/xbot71.glb"
 #define     SKINNING_VS     "../assets/shaders/glsl330/skinning.vs"
 #define     SKINNING_FS     "../assets/shaders/glsl330/skinning.fs"
 
@@ -97,13 +97,15 @@ int main(void)
         }
     }
     
-    int anim_count = 0, idleidx = 0, walkidx = 0, runidx = 0, deathidx = 0;
+    int anim_count = 0, idleidx = 0, walkidx = 0, runidx = 0, deathidx = 0, atkidx = 0, atk360idx = 0;
     ModelAnimation * animations = LoadModelAnimations(MODEL_PATH, &anim_count);
     for (int i = 0; i < anim_count; ++i) {
-        if (strstr(animations[i].name, "Idle"))     idleidx = i;
-        if (strstr(animations[i].name, "Walk"))     walkidx = i;
-        if (strstr(animations[i].name, "Run"))      runidx = i;
-        if (strstr(animations[i].name, "Death"))    deathidx = i;
+        if (strstr(animations[i].name, "Idle"))         idleidx = i;
+        if (strstr(animations[i].name, "Walk"))         walkidx = i;
+        if (strstr(animations[i].name, "Run"))          runidx = i;
+        if (strstr(animations[i].name, "Death"))        deathidx = i;
+        if (strstr(animations[i].name, "quickatk"))     atkidx = i;
+        if (strstr(animations[i].name, "strongatk360")) atk360idx = i;
     }
 
     int anim_frame = 0;
@@ -142,7 +144,11 @@ int main(void)
         player_set_sprint(pl, sprinting);
         
         if (!player_is_dead(pl)) {
-            player_set_anim(pl, (player_get_state(pl) != P_MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
+            if (player_get_did_attack(pl)) {
+                player_set_anim(pl, ANIM_ATK);
+            } else {
+                player_set_anim(pl, (player_get_state(pl) != P_MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
+            }
         } else {
             player_set_anim(pl, ANIM_DEATH);
         }
@@ -152,6 +158,8 @@ int main(void)
             case ANIM_WALK:     clip = walkidx;     break;
             case ANIM_RUN:      clip = runidx;      break;
             case ANIM_DEATH:    clip = deathidx;    break;
+            case ANIM_ATK:      clip = atkidx;      break;
+            case ANIM_ATK_360:  clip = atk360idx;   break;
             case ANIM_IDLE:
             default:            clip = idleidx;     break;
         }
