@@ -109,6 +109,8 @@ int main(void)
     }
 
     int anim_frame = 0;
+    bool pl_attacking = false;
+
     /* Main loop */
     while (!WindowShouldClose()) {
         float deltaTime = GetFrameTime();
@@ -142,13 +144,16 @@ int main(void)
         
         bool sprinting = IsKeyDown(KEY_LEFT_SHIFT);
         player_set_sprint(pl, sprinting);
-        
+        player_normal_attack(pl, deltaTime);    // Bug note later
+
         if (!player_is_dead(pl)) {
-            if (player_get_did_attack(pl)) {
-                player_set_anim(pl, ANIM_ATK);
-            } else {
-                player_set_anim(pl, (player_get_state(pl) != P_MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
+            if (!pl_attacking && player_get_did_attack(pl)) {
+                pl_attacking = true;
+                anim_frame = 0;
             }
+            player_set_anim(pl, pl_attacking ? ANIM_ATK
+                : (player_get_state(pl) != P_MOVING) ? ANIM_IDLE
+                : (sprinting ? ANIM_RUN : ANIM_WALK));
         } else {
             player_set_anim(pl, ANIM_DEATH);
         }
@@ -170,6 +175,12 @@ int main(void)
         */
         if (player_get_anim_current(pl) == ANIM_DEATH) {
             if (anim_frame < animations[clip].keyframeCount - 1) anim_frame++;
+        } else if (player_get_anim_current(pl) == ANIM_ATK) {
+            if (anim_frame < animations[clip].keyframeCount - 1) {
+                anim_frame++;
+            } else {
+                pl_attacking = false;
+            }
         } else if (player_get_anim_current(pl) != ANIM_IDLE) {
             anim_frame = (anim_frame + 1) % animations[clip].keyframeCount;
         } else {
@@ -178,8 +189,7 @@ int main(void)
 
         UpdateModelAnimation(pl_model, animations[clip], anim_frame);
 
-        player_normal_attack(pl, deltaTime);
-
+        /* enemy */
         Vector3 enemy_movement[ENEMY_NUM];
         for (int i = 0; i < ENEMY_NUM; ++i) {
             float dist_to_pl = Vector3Distance(pl_pos, enpos_list[i]);
@@ -194,8 +204,12 @@ int main(void)
 
             // Same as player but array
             if (!enemy_is_dead(enemy_list[i])) {
-                enemy_set_anim(enemy_list[i],
-                    (enemy_get_state(enemy_list[i]) == E_MOVING)
+                if (!pl_attacking && enemy_get_did_attack(enemy_list[i])) {
+                    pl_attacking = true;
+                    anim_frame = 0;
+                }
+                enemy_set_anim(enemy_list[i], pl_attacking ? ANIM_ATK
+                    : (enemy_get_state(enemy_list[i]) == E_MOVING)
                     ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
                     : ANIM_IDLE);
             } else {
@@ -207,18 +221,27 @@ int main(void)
                 case ANIM_WALK:     clip = walkidx;     break;
                 case ANIM_RUN:      clip = runidx;      break;
                 case ANIM_DEATH:    clip = deathidx;    break;
+                case ANIM_ATK:      clip = atkidx;      break;
+                case ANIM_ATK_360:  clip = atk360idx;   break;
                 default:            clip = idleidx;     break;
             }
 
             int frame = enemy_get_anim_frame(enemy_list[i]);
             if (enemy_get_anim_current(enemy_list[i]) == ANIM_DEATH) {
                 if (frame < animations[clip].keyframeCount - 1) frame++;
+            } else if (enemy_get_anim_current(enemy_list[i]) == ANIM_ATK) {
+                if (frame < animations[clip].keyframeCount - 1) {
+                    frame++;
+                } else {
+                    pl_attacking = false;
+                }
             } else if (enemy_get_anim_current(enemy_list[i]) != ANIM_IDLE) {
                 frame = (frame + 1) % animations[clip].keyframeCount;
             } else {
                 frame = 0;
             }
             enemy_set_anim_frame(enemy_list[i], frame);
+            UpdateModelAnimation(enemy_models[i], animations[clip], enemy_get_anim_frame(enemy_list[i]));
         }
 
         // 2: apply enemy movement + refresh enemy colliders
@@ -322,14 +345,14 @@ int main(void)
                 DrawModelEx(pl_model, pl_pos, rotation_axis, facing_angle, model_scale_vec, WHITE);
 
                 for (int i = 0; i < ENEMY_NUM; ++i) {
-                        int clip = idleidx;
-                        switch (enemy_get_anim_current(enemy_list[i])) {
-                            case ANIM_WALK:     clip = walkidx;     break;
-                            case ANIM_RUN:      clip = runidx;      break;
-                            case ANIM_DEATH:    clip = deathidx;    break;
-                            default:            clip = idleidx;     break;
-                        }
-                        UpdateModelAnimation(enemy_models[i], animations[clip], enemy_get_anim_frame(enemy_list[i]));
+                        // int clip = idleidx;
+                        // switch (enemy_get_anim_current(enemy_list[i])) {
+                        //     case ANIM_WALK:     clip = walkidx;     break;
+                        //     case ANIM_RUN:      clip = runidx;      break;
+                        //     case ANIM_DEATH:    clip = deathidx;    break;
+                        //     default:            clip = idleidx;     break;
+                        // }
+                        
                         float enemy_facing_angle = enemy_get_rotation(enemy_list[i]);
                         DrawModelEx(enemy_models[i], enpos_list[i], rotation_axis, enemy_facing_angle, model_scale_vec, ORANGE);
                 }
