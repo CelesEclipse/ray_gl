@@ -115,9 +115,10 @@ BoundingBox enemy_get_hitbox(const Enemy_t * enemy, Vector3 player_pos)
 {
     if (enemy == NULL) return (BoundingBox){0};
     Vector3 facing = Vector3Normalize(Vector3Subtract(player_pos, enemy->m_position));
-    Vector3 hitbox_centre = Vector3Add(enemy->m_position, Vector3Scale(facing, enemy->m_atk_range * 0.5f));
+    float reach = enemy->m_atk_range + 1.5f;    // match whatever stop distance actually is
+    Vector3 hitbox_centre = Vector3Add(enemy->m_position, Vector3Scale(facing, reach * 0.5f));
 
-    float half_size = enemy->m_atk_range * 0.5f;
+    float half_size = reach * 0.5f;
     return (BoundingBox){
         .min = (Vector3){hitbox_centre.x - half_size, enemy->m_position.y, hitbox_centre.z - half_size},
         .max = (Vector3){hitbox_centre.x + half_size, enemy->m_position.y + 2.0f, hitbox_centre.z + half_size}
@@ -217,7 +218,6 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
     if (distance > stop_distance) {
         enemy->m_state = E_MOVING;
         Vector3 direction = Vector3Normalize(dist);
-        enemy->m_rotation = atan2f(direction.x, direction.z) * RAD2DEG;
 
         return Vector3Scale(
             direction,
@@ -226,7 +226,7 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
     }
 
     enemy->m_state = E_ATTACK;
-    // should not call here
+    enemy->m_rotation = atan2f(dist.x, dist.z) * RAD2DEG;
 
     return (Vector3){0};
 }
