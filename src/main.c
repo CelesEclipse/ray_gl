@@ -272,7 +272,7 @@ int main(void)
 
         // 5: combat (separate from physical collision, it's hitbox time here)
         for (int i = 0; i < ENEMY_NUM; ++i) {
-            if (enemy_get_anim_current(enemy_list[i]) == ANIM_ATK && enemy_get_anim_current(enemy_list[i]) == ATK_IMPACT_FRAME) {
+            if (enemy_get_anim_current(enemy_list[i]) == ANIM_ATK && enemy_get_anim_frame(enemy_list[i]) == ATK_IMPACT_FRAME) {
                 CollisionResult_Capsule_t hit = collision_resolve_capsule_box(
                     player_collider_snapshot,
                     enemy_get_hitbox(enemy_list[i], pl_pos)

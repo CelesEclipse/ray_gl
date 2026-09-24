@@ -115,10 +115,10 @@ BoundingBox enemy_get_hitbox(const Enemy_t * enemy, Vector3 player_pos)
 {
     if (enemy == NULL) return (BoundingBox){0};
     Vector3 facing = Vector3Normalize(Vector3Subtract(player_pos, enemy->m_position));
-    float reach = enemy->m_atk_range + 1.5f;    // match whatever stop distance actually is
-    Vector3 hitbox_centre = Vector3Add(enemy->m_position, Vector3Scale(facing, reach * 0.5f));
+    //float reach = enemy->m_atk_range + 1.5f;    // match whatever stop distance actually is
+    Vector3 hitbox_centre = Vector3Add(enemy->m_position, Vector3Scale(facing, enemy->m_atk_range * 0.5f));
 
-    float half_size = reach * 0.5f;
+    float half_size = enemy->m_atk_range * 0.5f;
     return (BoundingBox){
         .min = (Vector3){hitbox_centre.x - half_size, enemy->m_position.y, hitbox_centre.z - half_size},
         .max = (Vector3){hitbox_centre.x + half_size, enemy->m_position.y + 2.0f, hitbox_centre.z + half_size}
