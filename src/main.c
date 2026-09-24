@@ -32,6 +32,7 @@ const int screenHeight = 720;
 #define     ENEMY_NUM       5
 #define     ENEMY_SPRINT_DIST_ENTER   7.0f
 #define     ENEMY_SPRINT_DIST_EXIT    5.0f
+#define     ATK_IMPACT_FRAME            12
 
 static Vector3 generate_random_vector(float min, float max)
 {
@@ -110,6 +111,7 @@ int main(void)
 
     int anim_frame = 0;
     bool pl_attacking = false;
+    bool en_attacking[ENEMY_NUM] = {false};
 
     /* Main loop */
     while (!WindowShouldClose()) {
@@ -204,11 +206,11 @@ int main(void)
 
             // Same as player but array
             if (!enemy_is_dead(enemy_list[i])) {
-                if (!pl_attacking && enemy_get_did_attack(enemy_list[i])) {
-                    pl_attacking = true;
-                    anim_frame = 0;
+                if (!en_attacking[i] && enemy_get_did_attack(enemy_list[i])) {
+                    en_attacking[i] = true;
+                    enemy_set_anim_frame(enemy_list[i], 0);
                 }
-                enemy_set_anim(enemy_list[i], pl_attacking ? ANIM_ATK
+                enemy_set_anim(enemy_list[i], en_attacking[i] ? ANIM_ATK
                     : (enemy_get_state(enemy_list[i]) == E_MOVING)
                     ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
                     : ANIM_IDLE);
@@ -233,7 +235,7 @@ int main(void)
                 if (frame < animations[clip].keyframeCount - 1) {
                     frame++;
                 } else {
-                    pl_attacking = false;
+                    en_attacking[i] = false;
                 }
             } else if (enemy_get_anim_current(enemy_list[i]) != ANIM_IDLE) {
                 frame = (frame + 1) % animations[clip].keyframeCount;
@@ -270,7 +272,7 @@ int main(void)
 
         // 5: combat (separate from physical collision, it's hitbox time here)
         for (int i = 0; i < ENEMY_NUM; ++i) {
-            if (enemy_get_did_attack(enemy_list[i])) {
+            if (enemy_get_anim_current(enemy_list[i]) == ANIM_ATK && anim_frame == ATK_IMPACT_FRAME) {
                 CollisionResult_Capsule_t hit = collision_resolve_capsule_box(
                     player_collider_snapshot,
                     enemy_get_hitbox(enemy_list[i], pl_pos)
@@ -280,7 +282,7 @@ int main(void)
                 }
             }
 
-            if (player_get_did_attack(pl)) {
+            if (player_get_anim_current(pl) == ANIM_ATK && anim_frame == ATK_IMPACT_FRAME) {
                 CollisionResult_Capsule_t hit = collision_resolve_capsule_box(
                     enemy_get_collider(enemy_list[i]), 
                     player_get_hitbox(pl)
@@ -344,15 +346,7 @@ int main(void)
                 float facing_angle = player_get_rotation(pl);
                 DrawModelEx(pl_model, pl_pos, rotation_axis, facing_angle, model_scale_vec, WHITE);
 
-                for (int i = 0; i < ENEMY_NUM; ++i) {
-                        // int clip = idleidx;
-                        // switch (enemy_get_anim_current(enemy_list[i])) {
-                        //     case ANIM_WALK:     clip = walkidx;     break;
-                        //     case ANIM_RUN:      clip = runidx;      break;
-                        //     case ANIM_DEATH:    clip = deathidx;    break;
-                        //     default:            clip = idleidx;     break;
-                        // }
-                        
+                for (int i = 0; i < ENEMY_NUM; ++i) {                        
                         float enemy_facing_angle = enemy_get_rotation(enemy_list[i]);
                         DrawModelEx(enemy_models[i], enpos_list[i], rotation_axis, enemy_facing_angle, model_scale_vec, ORANGE);
                 }
