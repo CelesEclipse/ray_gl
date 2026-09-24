@@ -100,6 +100,7 @@ int main(void)
     
     int anim_count = 0, idleidx = 0, walkidx = 0, runidx = 0, deathidx = 0, atkidx = 0, atk360idx = 0;
     ModelAnimation * animations = LoadModelAnimations(MODEL_PATH, &anim_count);
+    TraceLog(LOG_INFO, "ATK clip keyframeCount = %d, ATK_IMPACT_FRAME = %d", animations[atkidx].keyframeCount, ATK_IMPACT_FRAME);
     for (int i = 0; i < anim_count; ++i) {
         if (strstr(animations[i].name, "Idle"))         idleidx = i;
         if (strstr(animations[i].name, "Walk"))         walkidx = i;
