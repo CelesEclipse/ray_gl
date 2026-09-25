@@ -112,8 +112,8 @@ int main(void)
 
     int anim_frame = 0;
     bool pl_attacking = false;
-    bool pl_current_atk_anim = false;
     bool en_attacking[ENEMY_NUM] = {false};
+    AnimState_t pl_current_atk_anim = false;
 
     /* Main loop */
     while (!WindowShouldClose()) {
