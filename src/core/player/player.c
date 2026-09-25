@@ -18,9 +18,12 @@ struct Player
     float           m_atk_range;
     float           m_atk_speed;
     float           m_atk_timer;
+    float           m_atk360_timer;
+    float           m_atk360_speed;
     float           m_atk_dmg;
     float           m_rotation;
     bool            m_did_atk_this_tick;
+    AttackRequest_t m_last_attack;
     PlayerState_t   m_state;
     CapsuleCollider3D_t * m_collider;
     int             m_anim_current;
@@ -43,9 +46,12 @@ Player_t * player_initialize(const char * name)
     p->m_atk_range = 1.5f;
     p->m_atk_speed = 2.0f;
     p->m_atk_timer = 0.0f;
+    p->m_atk360_timer = 0.0f;
+    p->m_atk360_speed = 1.0f;
     p->m_atk_dmg = 20.0f;
     p->m_rotation = 0.0f;
     p->m_did_atk_this_tick = false;
+    p->m_last_attack = ATK_NONE;
     p->m_state = P_IDLE;
     p->m_anim_current = ANIM_IDLE;
     p->m_anim_frame = 0;
@@ -137,6 +143,12 @@ int player_get_anim_frame(const Player_t * player)
     return player->m_anim_frame;
 }
 
+AttackRequest_t player_get_last_atk(const Player_t * player)
+{
+    if (!player) return ATK_NONE;
+    return player->m_last_attack;
+}
+
 void player_set_position(Player_t * player, Vector3 new_pos)
 {
     if (player == NULL) return;
@@ -162,24 +174,31 @@ void player_set_hp(Player_t * player, float hp)
     if (player->m_hp < 0) player->m_hp = 0;
 }
 
-void player_normal_attack(Player_t * player, float deltatime)
+void player_normal_attack(Player_t * player, float deltatime, AttackRequest_t atkreq)
 {
     if (player == NULL) return;
     if (player->m_state == P_DEAD) return;
 
-    player->m_atk_timer += deltatime;
+    player->m_atk_timer     += deltatime;
+    player->m_atk360_timer  += deltatime;
+    player->m_did_atk_this_tick = false;
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        float atk_interval = 1.0f / player->m_atk_speed;
-        if (player->m_atk_timer >= atk_interval) {
+    if (atkreq == ATK_QUICK) {
+        float interval = 1.0f / player->m_atk_speed;
+        if (player->m_atk_timer >= interval) {
             player->m_atk_timer = 0.0f;
             player->m_state = P_ATTACK;
             player->m_did_atk_this_tick = true;
-        } else {
-            player->m_did_atk_this_tick = false;
+            player->m_last_attack = ATK_QUICK;
         }
-    } else {
-        player->m_did_atk_this_tick = false;
+    } else if (atkreq == ATK_360) {
+        float interval = 1.0f / player->m_atk360_speed;
+        if (player->m_atk360_timer >= interval) {
+            player->m_atk360_timer =0.0f;
+            player->m_state = P_ATTACK;
+            player->m_did_atk_this_tick = true;
+            player->m_last_attack = ATK_360;
+        }
     }
 }
 

@@ -11,3 +11,10 @@ typedef enum
     ANIM_ATK,
     ANIM_ATK_360
 } AnimState_t;
+
+typedef enum
+{
+    ATK_NONE,
+    ATK_QUICK,
+    ATK_360
+} AttackRequest_t;

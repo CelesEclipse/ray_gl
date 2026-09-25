@@ -24,8 +24,8 @@
 #define     SKINNING_VS     "../assets/shaders/glsl330/skinning.vs"
 #define     SKINNING_FS     "../assets/shaders/glsl330/skinning.fs"
 
-const int screenWidth = 1280;
-const int screenHeight = 720;
+#define     SCREENWIDTH     1280
+#define     SCREENHEIGHT    720
 #define     PLAYER_MAXHP    100
 #define     ENEMY_MAXHP     120
 #define     DEBUG_KEY       0
@@ -33,6 +33,7 @@ const int screenHeight = 720;
 #define     ENEMY_SPRINT_DIST_ENTER   7.0f
 #define     ENEMY_SPRINT_DIST_EXIT    5.0f
 #define     ATK_IMPACT_FRAME            12
+#define     ATK360_IMPACT_FRAME         24
 
 static Vector3 generate_random_vector(float min, float max)
 {
@@ -46,7 +47,7 @@ static Vector3 generate_random_vector(float min, float max)
 int main(void)
 {
     srand((unsigned int)time(NULL));
-    InitWindow(screenWidth, screenHeight, "Cam - C99 & Raylib");
+    InitWindow(SCREENWIDTH, SCREENHEIGHT, "Cam - C99 & Raylib");
     bool show_circle = false;
     float min_random_val = -10.0f;
     float max_random_val = 10.0f;
@@ -108,9 +109,10 @@ int main(void)
         if (strstr(animations[i].name, "quickatk"))     atkidx = i;
         if (strstr(animations[i].name, "strongatk360")) atk360idx = i;
     }
-    TraceLog(LOG_INFO, "ATK clip keyframeCount = %d, ATK_IMPACT_FRAME = %d", animations[atkidx].keyframeCount, ATK_IMPACT_FRAME);
+
     int anim_frame = 0;
     bool pl_attacking = false;
+    bool pl_current_atk_anim = false;
     bool en_attacking[ENEMY_NUM] = {false};
 
     /* Main loop */
@@ -142,18 +144,22 @@ int main(void)
         /* ================= UPDATE ================= */
 
         // 1. decide intent (no positions changed yet)
+        AttackRequest_t req = ATK_NONE;
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) req = ATK_QUICK;
+        if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) req = ATK_360;
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
         
         bool sprinting = IsKeyDown(KEY_LEFT_SHIFT);
         player_set_sprint(pl, sprinting);
-        player_normal_attack(pl, deltaTime);    // Bug note later
+        player_normal_attack(pl, deltaTime, req);    // Bug note later
 
         if (!player_is_dead(pl)) {
             if (!pl_attacking && player_get_did_attack(pl)) {
                 pl_attacking = true;
                 anim_frame = 0;
+                pl_current_atk_anim = (player_get_last_atk(pl) == ATK_360) ? ANIM_ATK_360 : ANIM_ATK;
             }
-            player_set_anim(pl, pl_attacking ? ANIM_ATK
+            player_set_anim(pl, pl_attacking ? pl_current_atk_anim
                 : (player_get_state(pl) != P_MOVING) ? ANIM_IDLE
                 : (sprinting ? ANIM_RUN : ANIM_WALK));
         } else {
@@ -177,7 +183,7 @@ int main(void)
         */
         if (player_get_anim_current(pl) == ANIM_DEATH) {
             if (anim_frame < animations[clip].keyframeCount - 1) anim_frame++;
-        } else if (player_get_anim_current(pl) == ANIM_ATK) {
+        } else if (player_get_anim_current(pl) == ANIM_ATK || player_get_anim_current(pl) == ANIM_ATK_360) {
             if (anim_frame < animations[clip].keyframeCount - 1) {
                 anim_frame++;
             } else {
@@ -291,6 +297,15 @@ int main(void)
                     enemy_take_damage(enemy_list[i], 10.0f);
                 }
             }
+            if (player_get_anim_current(pl) == ANIM_ATK_360 && anim_frame == ATK360_IMPACT_FRAME) {
+                CollisionResult_Capsule_t hit = collision_resolve_capsule_box(
+                    enemy_get_collider(enemy_list[i]), 
+                    player_get_hitbox(pl)
+                );
+                if (hit.penetration_depth > 0.0f) {
+                    enemy_take_damage(enemy_list[i], 20.0f);
+                }
+            }
         }
 
         // 6: apply player movement + correction once
@@ -365,7 +380,7 @@ int main(void)
             DrawText(TextFormat("pl : %s", state_to_string(player_get_state(pl))), 15, 85, 30, DARKBLUE);
 
             if (player_is_dead(pl)) {
-                DrawText("YOU DIED", screenWidth/2 - 100, screenHeight/2, 40, RED);
+                DrawText("YOU DIED", SCREENWIDTH/2 - 100, SCREENHEIGHT/2, 40, RED);
             }
 
         EndDrawing();
