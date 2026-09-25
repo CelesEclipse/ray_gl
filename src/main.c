@@ -12,6 +12,7 @@
 #include "raymath.h"
 
 #include "common/common.h"
+#include "core/camera/camera.h"
 #include "core/player/player.h"
 #include "core/enemies/enemy.h"
 #include "core/hud/ui.h"
@@ -66,15 +67,13 @@ int main(void)
     float pl_rotation = player_get_rotation(pl);
 
     Camera3D camera = {0};
-    camera.position = (Vector3){0.0f, 5.0f, 6.0f};
-    camera.target = pl_pos;
-    camera.up = (Vector3){0.0f, 1.0f, 0.0f};
-    camera.fovy = 60.0f;
-    camera.projection = CAMERA_PERSPECTIVE;
-
-    float cameraRadius = 8.0f;
     float cameraAngleH = 0.0f;
     float cameraAngleV = 0.3f;
+    camera_update(&camera, &cameraAngleH, &cameraAngleV, pl_pos);
+
+    /* Camera input */
+    Vector3 forward, right;
+    camera_get_basis(camera, &forward, &right);
 
     DisableCursor();
     SetTargetFPS(60);
@@ -122,24 +121,6 @@ int main(void)
         if (IsKeyPressed(KEY_C)) {
             show_circle = !show_circle;
         }
-
-        /* Camera input */
-        Vector2 mouseDelta = GetMouseDelta();
-        cameraAngleH -= mouseDelta.x * 0.003f;
-        cameraAngleV += mouseDelta.y * 0.003f;
-
-        if (cameraAngleV > 1.2f) cameraAngleV = 1.2f;
-        if (cameraAngleV < 0.1f) cameraAngleV = 0.1f;
-
-        camera.position.x = pl_pos.x + cameraRadius * sinf(cameraAngleH) * cosf(cameraAngleV);
-        camera.position.z = pl_pos.z + cameraRadius * cosf(cameraAngleH) * cosf(cameraAngleV);
-        camera.position.y = pl_pos.y + cameraRadius * sinf(cameraAngleV);
-        camera.target = pl_pos;
-
-        Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
-        forward.y = 0.0f;
-        forward = Vector3Normalize(forward);
-        Vector3 right = {-forward.z, 0.0f, forward.x};
 
         /* ================= UPDATE ================= */
 

@@ -218,7 +218,7 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
     if (distance > stop_distance) {
         enemy->m_state = E_MOVING;
         Vector3 direction = Vector3Normalize(dist);
-        enemy->m_rotation = atan2f(direction.x, direction.y) * RAD2DEG;
+        enemy->m_rotation = atan2f(direction.x, direction.z) * RAD2DEG;
 
         return Vector3Scale(
             direction,

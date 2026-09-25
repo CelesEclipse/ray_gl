@@ -11,6 +11,8 @@ set(SOURCES
     src/main.c 
     src/utils/utils.h
     src/utils/utils.c
+    src/core/camera/camera.h
+    src/core/camera/camera.c
     src/core/enemies/enemy.h
     src/core/enemies/enemy.c
     src/core/player/player.c 
