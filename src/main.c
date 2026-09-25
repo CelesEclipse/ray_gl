@@ -67,9 +67,15 @@ int main(void)
     float pl_rotation = player_get_rotation(pl);
 
     Camera3D camera = {0};
+    camera.position = (Vector3){0.0f, 5.0f, 6.0f};
+    camera.target = pl_pos;
+    camera.up = (Vector3){0.0f, 1.0f, 0.0f};
+    camera.fovy = 60.0f;
+    camera.projection = CAMERA_PERSPECTIVE;
     float cameraAngleH = 0.0f;
     float cameraAngleV = 0.3f;
     camera_update(&camera, &cameraAngleH, &cameraAngleV, pl_pos);
+    camera.target = pl_pos;
 
     /* Camera input */
     Vector3 forward, right;
