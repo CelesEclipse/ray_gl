@@ -220,22 +220,9 @@ int main(void)
         player_update_collider(pl);
 
         // 7: HUD display
-        CapsuleCollider3D_t * enbox_list[ENEMY_NUM];
-        float head_offset[ENEMY_NUM];
-        Vector3 en_top_head[ENEMY_NUM];
-        Vector2 en_screen_pos[ENEMY_NUM];
         int en_bar_x[ENEMY_NUM];
         int en_bar_y[ENEMY_NUM];
-        int e1_bar_width = 100;
-
-        for (int i = 0; i < ENEMY_NUM; ++i) {
-            enbox_list[i] = enemy_get_collider(enemy_list[i]);
-            head_offset[i] = geometry_capsule_get_coord(enbox_list[i], 1).y + geometry_capsule_get_radius(enbox_list[i]);
-            en_top_head[i] = Vector3Add(enpos_list[i], (Vector3){0.0f, head_offset[i] + 0.3f, 0.0f});
-            en_screen_pos[i] = GetWorldToScreen(en_top_head[i], camera);
-            en_bar_x[i] = en_screen_pos[i].x - e1_bar_width / 2;
-            en_bar_y[i] = en_screen_pos[i].y;
-        }
+        set_enemies_hpbar_position(enemy_list, enpos_list, camera, ENEMY_NUM, en_bar_x, en_bar_y);
 
         /* render */
         BeginDrawing();
@@ -278,7 +265,7 @@ int main(void)
 
             for (int i = 0; i < ENEMY_NUM; ++i) {
                 if (!enemy_is_dead(enemy_list[i])) {
-                    display_hp_bar(en_bar_x[i], en_bar_y[i], e1_bar_width, 15, enemy_get_hp(enemy_list[i]), ENEMY_MAXHP);
+                    display_hp_bar(en_bar_x[i], en_bar_y[i], ENEMY_HPBAR_WIDTH, 15, enemy_get_hp(enemy_list[i]), ENEMY_MAXHP);
                 }
             }
             DrawText(TextFormat("HP: %.0f", player_get_hp(pl)), 15, 45, 10, RAYWHITE);
