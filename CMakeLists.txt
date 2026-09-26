@@ -21,8 +21,8 @@ set(SOURCES
     src/core/hud/ui.c
     src/core/collision/collision.h
     src/core/collision/collision.c
-    src/core/models/model_hdl.h
-    src/core/models/model_hdl.c
+    src/core/models/animations/anim_controller.h
+    src/core/models/animations/anim_controller.c
     src/physics/geometry.h
     src/physics/geometry.c
 )

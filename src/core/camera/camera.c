@@ -18,6 +18,7 @@ void camera_update(Camera3D * camera, float * camera_angleH, float * camera_angl
     camera->position.x = player_pos.x + cameraRadius * sinf(*camera_angleH) * cosf(*camera_angleV);
     camera->position.z = player_pos.z + cameraRadius * cosf(*camera_angleH) * cosf(*camera_angleV);
     camera->position.y = player_pos.y + cameraRadius * sinf(*camera_angleV);
+    camera->target = player_pos;
 }
 
 void camera_get_basis(Camera3D camera, Vector3 * forward, Vector3 * right)

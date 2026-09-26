@@ -1,3 +1,4 @@
+#include "core/models/animations/anim_controller.h"
 #if defined (PLATFORM_DESKTOP)
     #define GLSL_VERSION    100
 #else
@@ -68,18 +69,14 @@ int main(void)
 
     Camera3D camera = {0};
     camera.position = (Vector3){0.0f, 5.0f, 6.0f};
-    camera.target = pl_pos;
     camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     camera.fovy = 60.0f;
     camera.projection = CAMERA_PERSPECTIVE;
     float cameraAngleH = 0.0f;
     float cameraAngleV = 0.3f;
-    camera_update(&camera, &cameraAngleH, &cameraAngleV, pl_pos);
-    camera.target = pl_pos;
 
     /* Camera input */
     Vector3 forward, right;
-    camera_get_basis(camera, &forward, &right);
 
     DisableCursor();
     SetTargetFPS(60);
@@ -123,6 +120,8 @@ int main(void)
     /* Main loop */
     while (!WindowShouldClose()) {
         float deltaTime = GetFrameTime();
+        camera_update(&camera, &cameraAngleH, &cameraAngleV, pl_pos);
+        camera_get_basis(camera, &forward, &right);
 
         if (IsKeyPressed(KEY_C)) {
             show_circle = !show_circle;
@@ -153,35 +152,16 @@ int main(void)
             player_set_anim(pl, ANIM_DEATH);
         }
         
-        int clip = idleidx;
-        switch (player_get_anim_current(pl)) {
-            case ANIM_WALK:     clip = walkidx;     break;
-            case ANIM_RUN:      clip = runidx;      break;
-            case ANIM_DEATH:    clip = deathidx;    break;
-            case ANIM_ATK:      clip = atkidx;      break;
-            case ANIM_ATK_360:  clip = atk360idx;   break;
-            case ANIM_IDLE:
-            default:            clip = idleidx;     break;
-        }
+        AnimClipSet_t clips = { idleidx, walkidx, runidx, deathidx, atkidx, atk360idx };
+        int clip = anim_controller_resolve_clip(player_get_anim_current(pl), clips);
 
         /* Only advance the clip while the player is actually moving (WASD held).
            When idle, hold on frame 0 instead of freezing mid-stride.
            Check for death
         */
-        if (player_get_anim_current(pl) == ANIM_DEATH) {
-            if (anim_frame < animations[clip].keyframeCount - 1) anim_frame++;
-        } else if (player_get_anim_current(pl) == ANIM_ATK || player_get_anim_current(pl) == ANIM_ATK_360) {
-            if (anim_frame < animations[clip].keyframeCount - 1) {
-                anim_frame++;
-            } else {
-                pl_attacking = false;
-            }
-        } else if (player_get_anim_current(pl) != ANIM_IDLE) {
-            anim_frame = (anim_frame + 1) % animations[clip].keyframeCount;
-        } else {
-            anim_frame = 0;
-        }
-
+        bool pl_atk_finished = false;
+        anim_frame = anim_controller_advance(player_get_anim_current(pl), anim_frame, animations[clip].keyframeCount, &pl_atk_finished);
+        if (pl_atk_finished) pl_attacking = false;
         UpdateModelAnimation(pl_model, animations[clip], anim_frame);
 
         /* enemy */
@@ -211,30 +191,10 @@ int main(void)
                 enemy_set_anim(enemy_list[i], ANIM_DEATH);
             }
 
-            int clip = idleidx;
-            switch (enemy_get_anim_current(enemy_list[i])) {
-                case ANIM_WALK:     clip = walkidx;     break;
-                case ANIM_RUN:      clip = runidx;      break;
-                case ANIM_DEATH:    clip = deathidx;    break;
-                case ANIM_ATK:      clip = atkidx;      break;
-                case ANIM_ATK_360:  clip = atk360idx;   break;
-                default:            clip = idleidx;     break;
-            }
-
-            int frame = enemy_get_anim_frame(enemy_list[i]);
-            if (enemy_get_anim_current(enemy_list[i]) == ANIM_DEATH) {
-                if (frame < animations[clip].keyframeCount - 1) frame++;
-            } else if (enemy_get_anim_current(enemy_list[i]) == ANIM_ATK) {
-                if (frame < animations[clip].keyframeCount - 1) {
-                    frame++;
-                } else {
-                    en_attacking[i] = false;
-                }
-            } else if (enemy_get_anim_current(enemy_list[i]) != ANIM_IDLE) {
-                frame = (frame + 1) % animations[clip].keyframeCount;
-            } else {
-                frame = 0;
-            }
+            int clip = anim_controller_resolve_clip(enemy_get_anim_current(enemy_list[i]), clips);
+            bool en_atk_finished = false;
+            int frame = anim_controller_advance(enemy_get_anim_current(enemy_list[i]), frame, animations[clip].keyframeCount, &en_atk_finished);
+            if (en_atk_finished) en_attacking[i] = false;
             enemy_set_anim_frame(enemy_list[i], frame);
             UpdateModelAnimation(enemy_models[i], animations[clip], enemy_get_anim_frame(enemy_list[i]));
         }
