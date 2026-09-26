@@ -12,12 +12,12 @@
 #include "raylib.h"
 #include "raymath.h"
 
+#include "core/core.h"
 #include "common/common.h"
 #include "core/camera/camera.h"
 #include "core/player/player.h"
 #include "core/enemies/enemy.h"
 #include "core/hud/ui.h"
-#include "core/collision/collision.h"
 #include "utils/utils.h"
 
 #define SUPPORT_GPU_SKINNING    1
@@ -34,8 +34,7 @@
 #define     ENEMY_NUM       5
 #define     ENEMY_SPRINT_DIST_ENTER   7.0f
 #define     ENEMY_SPRINT_DIST_EXIT    5.0f
-#define     ATK_IMPACT_FRAME            12
-#define     ATK360_IMPACT_FRAME         24
+
 
 static Vector3 generate_random_vector(float min, float max)
 {
@@ -51,8 +50,8 @@ int main(void)
     srand((unsigned int)time(NULL));
     InitWindow(SCREENWIDTH, SCREENHEIGHT, "Cam - C99 & Raylib");
     bool show_circle = false;
-    float min_random_val = -10.0f;
-    float max_random_val = 10.0f;
+    float min_random_val = -15.0f;
+    float max_random_val = 15.0f;
 
     Player_t * pl = player_initialize("cuongbip");
     Enemy_t * enemy_list[ENEMY_NUM];
@@ -193,8 +192,12 @@ int main(void)
 
             int clip = anim_controller_resolve_clip(enemy_get_anim_current(enemy_list[i]), clips);
             bool en_atk_finished = false;
-            int frame = anim_controller_advance(enemy_get_anim_current(enemy_list[i]), frame, animations[clip].keyframeCount, &en_atk_finished);
+            int frame = anim_controller_advance(enemy_get_anim_current(enemy_list[i]),
+                enemy_get_anim_frame(enemy_list[i]), 
+                animations[clip].keyframeCount,
+                &en_atk_finished);
             if (en_atk_finished) en_attacking[i] = false;
+
             enemy_set_anim_frame(enemy_list[i], frame);
             UpdateModelAnimation(enemy_models[i], animations[clip], enemy_get_anim_frame(enemy_list[i]));
         }
@@ -206,54 +209,9 @@ int main(void)
             enemy_update_collider(enemy_list[i]);
         }
 
-        // 3: snapshot player collider BEFORE resolving anything this frame
-        player_update_collider(pl);
-        CapsuleCollider3D_t * player_collider_snapshot = player_get_collider(pl);
+        // 3: combat resolve
         Vector3 pl_correction_total = {0};
-
-        // 4: physical collision (player body vs each enemy BODY, not hitbox)
-        for (int i = 0; i < ENEMY_NUM; ++i) {
-            CollisionResult_Capsule_t body_col = collision_resolve_capsules(
-                player_collider_snapshot,
-                enemy_get_collider(enemy_list[i])
-            );
-            if (body_col.penetration_depth > 0) {
-                Vector3 push = Vector3Scale(body_col.normal_vector, body_col.penetration_depth);
-                pl_correction_total = Vector3Add(pl_correction_total, push);
-            }
-        }
-
-        // 5: combat (separate from physical collision, it's hitbox time here)
-        for (int i = 0; i < ENEMY_NUM; ++i) {
-            if (enemy_get_anim_current(enemy_list[i]) == ANIM_ATK && enemy_get_anim_frame(enemy_list[i]) == ATK_IMPACT_FRAME) {
-                CollisionResult_Capsule_t hit = collision_resolve_capsule_box(
-                    player_collider_snapshot,
-                    enemy_get_hitbox(enemy_list[i], pl_pos)
-                );
-                if (hit.penetration_depth > 0.0f) {
-                    player_take_damage(pl, 10.0f);
-                }
-            }
-
-            if (player_get_anim_current(pl) == ANIM_ATK && anim_frame == ATK_IMPACT_FRAME) {
-                CollisionResult_Capsule_t hit = collision_resolve_capsule_box(
-                    enemy_get_collider(enemy_list[i]), 
-                    player_get_hitbox(pl)
-                );
-                if (hit.penetration_depth > 0.0f) {
-                    enemy_take_damage(enemy_list[i], 10.0f);
-                }
-            }
-            if (player_get_anim_current(pl) == ANIM_ATK_360 && anim_frame == ATK360_IMPACT_FRAME) {
-                CollisionResult_Capsule_t hit = collision_resolve_capsule_box(
-                    enemy_get_collider(enemy_list[i]), 
-                    player_get_hitbox(pl)
-                );
-                if (hit.penetration_depth > 0.0f) {
-                    enemy_take_damage(enemy_list[i], 20.0f);
-                }
-            }
-        }
+        combat_resolve(pl, enemy_list, ENEMY_NUM, pl_pos, anim_frame, &pl_correction_total);
 
         // 6: apply player movement + correction once
         pl_pos = Vector3Add(pl_pos, movement);

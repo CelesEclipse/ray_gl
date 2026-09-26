@@ -9,6 +9,8 @@ include_directories(${RAYLIB_SRC_DIR})
 
 set(SOURCES 
     src/main.c 
+    src/core/core.h
+    src/core/core.c
     src/utils/utils.h
     src/utils/utils.c
     src/core/camera/camera.h
