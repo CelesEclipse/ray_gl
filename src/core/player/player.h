@@ -4,6 +4,8 @@
 #include "../../physics/geometry.h"
 #include "../../common/common.h"
 
+#define MS1_PLAYER_THROWS   1
+
 typedef enum
 {
     P_IDLE,
@@ -42,3 +44,8 @@ void        player_take_damage(Player_t * player, float recv_dmg);
 void        player_set_anim(Player_t * player, int anim_idx);
 void        player_set_anim_frame(Player_t * player, int frame);
 Vector3     player_update_general(Player_t * player, float * out_rotation, float deltatime, Vector3 forward, Vector3 right);
+
+/* Other mechanics */
+#if MS1_PLAYER_THROWS
+bool player_throw_items(Player_t * player, ItemType_t item_type, Vector3 * spawn_pos, Vector3 * spawn_velocity);
+#endif

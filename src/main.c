@@ -35,6 +35,21 @@
 #define     ENEMY_SPRINT_DIST_ENTER   7.0f
 #define     ENEMY_SPRINT_DIST_EXIT    5.0f
 
+#define MAX_THROWN_ITEMS    8
+#define GRAVITY             9.8f
+#define GROUND_Y            0.0f
+#define ITEM_FLEE_TRIGGER_RADIUS   6.0f
+
+typedef struct
+{
+    ItemType_t type;
+    Vector3 position;
+    Vector3 velocity;
+    bool active;
+    bool landed;
+} ThrownItem_t;
+
+ThrownItem_t thrown_items[MAX_THROWN_ITEMS] = {0};
 
 static Vector3 generate_random_vector(float min, float max)
 {
@@ -132,6 +147,32 @@ int main(void)
         AttackRequest_t req = ATK_NONE;
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) req = ATK_QUICK;
         if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) req = ATK_360;
+        if (IsKeyPressed(KEY_Q)) {
+            Vector3 spawn_pos, spawn_vel;
+            if (player_throw_items(pl, ITEM_COIN, &spawn_pos, &spawn_vel)) {
+                for (int i = 0; i < MAX_THROWN_ITEMS; ++i) {
+                    if (!thrown_items[i].active) {
+                        thrown_items[i] = (ThrownItem_t){ITEM_COIN, spawn_pos, spawn_vel, true, false};
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Handle throwing action, simple, no complex collision yet
+        for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
+            if (!thrown_items[t].active || thrown_items[t].landed) continue;
+
+            thrown_items[t].velocity.y -= GRAVITY * deltaTime;
+            thrown_items[t].position = Vector3Add(thrown_items[t].position,
+                Vector3Scale(thrown_items[t].velocity, deltaTime));
+
+            if (thrown_items[t].position.y <= GROUND_Y) {
+                thrown_items[t].position.y = GROUND_Y;
+                thrown_items[t].landed = true;
+                thrown_items[t].velocity = (Vector3){0};
+            }
+        }
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
         
         bool sprinting = IsKeyDown(KEY_LEFT_SHIFT);

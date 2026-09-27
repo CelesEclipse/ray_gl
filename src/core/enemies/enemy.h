@@ -8,7 +8,8 @@ typedef enum
     E_IDLE,
     E_MOVING,
     E_ATTACK,
-    E_DEAD
+    E_DEAD,
+    E_FLEE
 } EnemyState_t;
 
 typedef struct Enemy Enemy_t;

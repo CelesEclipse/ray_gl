@@ -1,5 +1,5 @@
 @echo off
-set "DEVKIT_PATH=C:\raylib\w64devkit\bin"
+set "DEVKIT_PATH=C:\w64devkit\bin"
 set "PATH=%DEVKIT_PATH%;%PATH%"
 
 echo =========================================

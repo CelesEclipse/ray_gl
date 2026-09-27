@@ -1,7 +1,7 @@
-#include "camera.h"
 #include "raylib.h"
 #include "raymath.h"
 #include <math.h>
+#include "camera.h"
 
 void camera_update(Camera3D * camera, float * camera_angleH, float * camera_angleV, Vector3 player_pos)
 {

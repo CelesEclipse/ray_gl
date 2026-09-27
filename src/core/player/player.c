@@ -28,6 +28,7 @@ struct Player
     CapsuleCollider3D_t * m_collider;
     int             m_anim_current;
     int             m_anim_frame;
+    Item_t          m_items[ITEM_COUNT];
 };
 
 Player_t * player_initialize(const char * name)
@@ -58,12 +59,18 @@ Player_t * player_initialize(const char * name)
 
     p->m_collider = geometry_capsule_alloc();
     geometry_capsule_set_radius(p->m_collider, 1.0f);
+    
+    p->m_items = malloc(sizeof(Item_t));
+    p->m_items->type = ITEM_COIN;
+    p->m_items->quantity = PLAYER_ITEMS;
     return p;
 }
 
 void player_destroy(Player_t * pl)
 {
     if (pl != NULL) {
+        geometry_capsule_destroy(pl->m_collider);
+        free(pl->m_items);
         free(pl);
     }
     pl = NULL;
@@ -283,4 +290,9 @@ Vector3 player_update_general(
 
     player->m_state = P_IDLE;
     return (Vector3){0};
+}
+
+bool player_throw_items(Player_t * player, ItemType_t item_type, Vector3 * spawn_pos, Vector3 * spawn_velocity)
+{
+
 }

@@ -22,6 +22,7 @@ void combat_resolve(
 
     // Physical collision (not hitbox)
     for (int i = 0; i < count; ++i) {
+        if (!enemies[i]) continue;
         CollisionResult_Capsule_t body_col = collision_resolve_capsules(
             player_collider_snapshot,
             enemy_get_collider(enemies[i])

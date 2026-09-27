@@ -1,4 +1,4 @@
 -I
-C:/raylib/raylib/src
+C:/raylib/src
 -I
-C:/raylib/w64devkit/include
+C:/w64devkit/include
