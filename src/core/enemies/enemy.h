@@ -3,6 +3,8 @@
 #include "raylib.h"
 #include "../../physics/geometry.h"
 
+#define FLEE_PICKUP_RADIUS  1.2f
+
 typedef enum
 {
     E_IDLE,
@@ -45,3 +47,7 @@ void        enemy_set_anim(Enemy_t * enemy, int anim_idx);
 void        enemy_set_anim_frame(Enemy_t * enemy, int frame);
 void        enemy_draw_detect_range(Enemy_t * enemy);
 Vector3     enemy_update_general(Enemy_t * enemy, Vector3 player_pos, float deltatime);
+
+void        enemy_start_flee(Enemy_t * enemy, Vector3 target_pos);
+Vector3     enemy_update_flee(Enemy_t * enemy, Vector3 player_pos, float deltatime);
+bool        enemy_flee_did_reach_target(const Enemy_t * enemy);

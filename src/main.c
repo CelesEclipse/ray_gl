@@ -207,28 +207,55 @@ int main(void)
         /* enemy */
         Vector3 enemy_movement[ENEMY_NUM];
         for (int i = 0; i < ENEMY_NUM; ++i) {
-            float dist_to_pl = Vector3Distance(pl_pos, enpos_list[i]);
-            bool was_sprinting = enemy_get_speed(enemy_list[i]) > 10.0f;
-            bool en_sprinting = was_sprinting
-                ? (dist_to_pl > ENEMY_SPRINT_DIST_EXIT)
-                : (dist_to_pl > ENEMY_SPRINT_DIST_ENTER);
-            enemy_set_sprint(enemy_list[i], en_sprinting);
 
-            enemy_movement[i] = enemy_update_general(enemy_list[i], pl_pos, deltaTime);
-            enemy_normal_attack(enemy_list[i], deltaTime);
-
-            // Same as player but array
-            if (!enemy_is_dead(enemy_list[i])) {
-                if (!en_attacking[i] && enemy_get_did_attack(enemy_list[i])) {
-                    en_attacking[i] = true;
-                    enemy_set_anim_frame(enemy_list[i], 0);
+            // Trigger: only from idle or actively chasing - never interrupt an attack, death, or an already-fleeing enemy
+            if (enemy_get_state(enemy_list[i]) == E_IDLE || enemy_get_state(enemy_list[i]) == E_MOVING) {
+                for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
+                    if (thrown_items[t].active && thrown_items[t].landed &&
+                        Vector3Distance(enpos_list[i], thrown_items[t].position) < ITEM_FLEE_TRIGGER_RADIUS) {
+                        enemy_start_flee(enemy_list[i], thrown_items[t].position);
+                        break;
+                    }
                 }
-                enemy_set_anim(enemy_list[i], en_attacking[i] ? ANIM_ATK
-                    : (enemy_get_state(enemy_list[i]) == E_MOVING)
-                    ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
-                    : ANIM_IDLE);
+            }
+
+            if (enemy_get_state(enemy_list[i]) == E_FLEE) {
+                enemy_movement[i] = enemy_update_flee(enemy_list[i], pl_pos, deltaTime);
+                enemy_set_anim(enemy_list[i], ANIM_WALK);
+
+                if (enemy_flee_did_reach_target(enemy_list[i])) {
+                    for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
+                        if (thrown_items[t].active &&
+                            Vector3Distance(thrown_items[t].position, enpos_list[i]) < FLEE_PICKUP_RADIUS) {
+                            thrown_items[t].active = false;
+                            break;
+                        }
+                    }
+                }
             } else {
-                enemy_set_anim(enemy_list[i], ANIM_DEATH);
+                float dist_to_pl = Vector3Distance(pl_pos, enpos_list[i]);
+                bool was_sprinting = enemy_get_speed(enemy_list[i]) > 10.0f;
+                bool en_sprinting = was_sprinting
+                    ? (dist_to_pl > ENEMY_SPRINT_DIST_EXIT)
+                    : (dist_to_pl > ENEMY_SPRINT_DIST_ENTER);
+                enemy_set_sprint(enemy_list[i], en_sprinting);
+
+                enemy_movement[i] = enemy_update_general(enemy_list[i], pl_pos, deltaTime);
+                enemy_normal_attack(enemy_list[i], deltaTime);
+
+                // Same as player but array
+                if (!enemy_is_dead(enemy_list[i])) {
+                    if (!en_attacking[i] && enemy_get_did_attack(enemy_list[i])) {
+                        en_attacking[i] = true;
+                        enemy_set_anim_frame(enemy_list[i], 0);
+                    }
+                    enemy_set_anim(enemy_list[i], en_attacking[i] ? ANIM_ATK
+                        : (enemy_get_state(enemy_list[i]) == E_MOVING)
+                        ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
+                        : ANIM_IDLE);
+                } else {
+                    enemy_set_anim(enemy_list[i], ANIM_DEATH);
+                }
             }
 
             int clip = anim_controller_resolve_clip(enemy_get_anim_current(enemy_list[i]), clips);

@@ -7,6 +7,11 @@
 
 #define NAME_SIZE       50
 #define MAX_HP          100
+#define PLAYER_ITEMS                5
+#define THROW_SPEED_HORIZONTAL      8.0f
+#define THROW_SPEED_VERTICAL        6.0f
+#define THROW_SPAWN_FORWARD_OFFSET  1.0f
+#define THROW_SPAWN_HEIGHT_OFFSET   1.2f
 
 struct Player
 {
@@ -60,9 +65,11 @@ Player_t * player_initialize(const char * name)
     p->m_collider = geometry_capsule_alloc();
     geometry_capsule_set_radius(p->m_collider, 1.0f);
     
-    p->m_items = malloc(sizeof(Item_t));
-    p->m_items->type = ITEM_COIN;
-    p->m_items->quantity = PLAYER_ITEMS;
+    for (int i = 0; i < ITEM_COUNT; ++i) {
+        p->m_items[i].type = (ItemType_t)i;
+        p->m_items[i].quantity = 0;
+    }
+    p->m_items[ITEM_COIN].quantity = PLAYER_ITEMS;
     return p;
 }
 
@@ -70,7 +77,6 @@ void player_destroy(Player_t * pl)
 {
     if (pl != NULL) {
         geometry_capsule_destroy(pl->m_collider);
-        free(pl->m_items);
         free(pl);
     }
     pl = NULL;
@@ -294,5 +300,29 @@ Vector3 player_update_general(
 
 bool player_throw_items(Player_t * player, ItemType_t item_type, Vector3 * spawn_pos, Vector3 * spawn_velocity)
 {
+    if (!player) return false;
+    if (item_type < 0 || item_type >= ITEM_COUNT) return false;
+    if (player->m_items[item_type].quantity <= 0) return false;
 
+    player->m_items[item_type].quantity--;
+
+    float rad = player->m_rotation * DEG2RAD;
+    Vector3 forward = {sinf(rad), 0.0f, cosf(rad)};
+
+    if (spawn_pos) {
+        *spawn_pos = Vector3Add(player->m_position, (Vector3){
+            forward.x * THROW_SPAWN_FORWARD_OFFSET,
+            THROW_SPAWN_HEIGHT_OFFSET,
+            forward.z * THROW_SPAWN_FORWARD_OFFSET
+        });
+    }
+    if (spawn_velocity) {
+        *spawn_velocity = (Vector3){
+            forward.x * THROW_SPEED_HORIZONTAL,
+            THROW_SPEED_VERTICAL,
+            forward.z * THROW_SPEED_HORIZONTAL
+        };
+    }
+
+    return true;
 }

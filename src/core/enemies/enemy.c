@@ -8,6 +8,9 @@
 #define NAME_SIZE   50
 #define MAX_HP      100
 
+#define FLEE_DURATION       6.0f
+#define FLEE_SPEED          6.0f  //deliberately the normal/walk speed, not sprint - enemy walks away, doesn't run . Isn't it?
+
 struct Enemy
 {
     char            m_name[NAME_SIZE];
@@ -25,6 +28,9 @@ struct Enemy
     CapsuleCollider3D_t * m_collider;
     int             m_anim_current;
     int             m_anim_frame;
+    Vector3         m_flee_target;
+    bool            m_flee_reached;
+    float           m_flee_timer;
 };
 
 Enemy_t * enemy_initialize(const char * name)
@@ -49,6 +55,9 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_state = E_IDLE;
     e->m_anim_current = ANIM_IDLE;
     e->m_anim_frame = 0;
+    e->m_flee_target = (Vector3){0};
+    e->m_flee_reached = false;
+    e->m_flee_timer = 0.0f;
 
     e->m_collider = geometry_capsule_alloc();
     geometry_capsule_set_radius(e->m_collider, 1.0f);
@@ -273,4 +282,51 @@ void enemy_draw_detect_range(Enemy_t * enemy)
     float rot_angle = 90.0f;
 
     DrawCircle3D(center, radius, rot_axis, rot_angle, YELLOW);
+}
+
+void enemy_start_flee(Enemy_t * enemy, Vector3 target_pos)
+{
+    if (!enemy) return;
+    enemy->m_state = E_FLEE;
+    enemy->m_flee_target = target_pos;
+    enemy->m_flee_reached = false;
+    enemy->m_flee_timer = 0.0f;
+}
+
+bool enemy_flee_did_reach_target(const Enemy_t * enemy)
+{
+    if (!enemy) return false;
+    return enemy->m_flee_reached;
+}
+
+Vector3 enemy_update_flee(Enemy_t * enemy, Vector3 player_pos, float deltatime)
+{
+    if (!enemy) return (Vector3){0};
+
+    enemy->m_flee_timer += deltatime;
+    if (enemy->m_flee_timer >= FLEE_DURATION) {
+        enemy->m_state = E_IDLE; // enemy gives up / back to normal
+        return (Vector3){0};
+    }
+
+    Vector3 dir;
+
+    if (!enemy->m_flee_reached) {
+        Vector3 to_target = Vector3Subtract(enemy->m_flee_target, enemy->m_position);
+        float dist = Vector3Length(to_target);
+
+        if (dist < FLEE_PICKUP_RADIUS) {
+            enemy->m_flee_reached = true;
+        }
+
+        /* guard against normalizing a zero vector rather than let atan2f/rotation glitch on NaN */
+        dir = (dist > 0.0001f) ? Vector3Scale(to_target, 1.0f / dist) : (Vector3){0.0f, 0.0f, 1.0f};
+    } else {
+        Vector3 away = Vector3Subtract(enemy->m_position, player_pos);
+        float dist = Vector3Length(away);
+        dir = (dist > 0.0001f) ? Vector3Scale(away, 1.0f / dist) : (Vector3){0.0f, 0.0f, 1.0f};
+    }
+
+    enemy->m_rotation = atan2f(dir.x, dir.z) * RAD2DEG;
+    return Vector3Scale(dir, FLEE_SPEED * deltatime);
 }
