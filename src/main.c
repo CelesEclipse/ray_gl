@@ -39,6 +39,7 @@
 #define GRAVITY             9.8f
 #define GROUND_Y            0.0f
 #define ITEM_FLEE_TRIGGER_RADIUS   6.0f
+#define THROW_RELEASE_FRAME        38
 
 typedef struct
 {
@@ -130,8 +131,10 @@ int main(void)
     int anim_frame = 0;
     bool pl_attacking = false;
     bool pl_throwing = false;
+    Vector3 pl_throw_spawn_pos = {0};
+    Vector3 pl_throw_spawn_vel = {0};
     bool en_attacking[ENEMY_NUM] = {false};
-    AnimState_t pl_current_atk_anim = false;
+    AnimState_t pl_current_atk_anim = ANIM_IDLE;
 
     /* Main loop */
     while (!WindowShouldClose()) {
@@ -149,15 +152,11 @@ int main(void)
         AttackRequest_t req = ATK_NONE;
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) req = ATK_QUICK;
         if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON)) req = ATK_360;
-        if (IsKeyPressed(KEY_Q)) {
-            Vector3 spawn_pos, spawn_vel;
-            if (player_throw_items(pl, ITEM_COIN, &spawn_pos, &spawn_vel)) {
-                for (int i = 0; i < MAX_THROWN_ITEMS; ++i) {
-                    if (!thrown_items[i].active) {
-                        thrown_items[i] = (ThrownItem_t){ITEM_COIN, spawn_pos, spawn_vel, true, false};
-                        break;
-                    }
-                }
+        if (!pl_throwing && IsKeyPressed(KEY_Q)) {
+            if (player_throw_items(pl, ITEM_COIN, &pl_throw_spawn_pos, &pl_throw_spawn_vel)) {
+                pl_throwing = true;
+                anim_frame = 0;
+                player_set_anim(pl, ANIM_THROW);
             }
         }
 
@@ -187,14 +186,13 @@ int main(void)
                 anim_frame = 0;
                 pl_current_atk_anim = (player_get_last_atk(pl) == ATK_360) ? ANIM_ATK_360 : ANIM_ATK;
             }
-            if (!pl_throwing) {
-                pl_throwing = true;
-                anim_frame = 0;
-                player_set_anim(pl, throwidx);
+            if (pl_attacking) {
+                player_set_anim(pl, pl_current_atk_anim);
+            } else if (pl_throwing) {
+                player_set_anim(pl, ANIM_THROW);
+            } else {
+                player_set_anim(pl, (player_get_state(pl) != P_MOVING) ? ANIM_IDLE : (sprinting ? ANIM_RUN : ANIM_WALK));
             }
-            player_set_anim(pl, pl_attacking ? pl_current_atk_anim
-                : (player_get_state(pl) != P_MOVING) ? ANIM_IDLE
-                : (sprinting ? ANIM_RUN : ANIM_WALK));
         } else {
             player_set_anim(pl, ANIM_DEATH);
         }
@@ -208,7 +206,21 @@ int main(void)
         */
         bool pl_atk_finished = false;
         anim_frame = anim_controller_advance(player_get_anim_current(pl), anim_frame, animations[clip].keyframeCount, &pl_atk_finished);
-        if (pl_atk_finished) pl_attacking = false;
+        if (pl_atk_finished) {
+            pl_attacking = false;
+            pl_throwing = false;
+        }
+
+        // spawn the actual thrown item on its release frame, not on keypress
+        if (pl_throwing && player_get_anim_current(pl) == ANIM_THROW && anim_frame == THROW_RELEASE_FRAME) {
+            for (int i = 0; i < MAX_THROWN_ITEMS; ++i) {
+                if (!thrown_items[i].active) {
+                    thrown_items[i] = (ThrownItem_t){ ITEM_COIN, pl_throw_spawn_pos, pl_throw_spawn_vel, true, false };
+                    break;
+                }
+            }
+        }
+
         UpdateModelAnimation(pl_model, animations[clip], anim_frame);
 
         /* enemy */
