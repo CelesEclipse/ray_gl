@@ -10,6 +10,7 @@ int anim_controller_resolve_clip(AnimState_t current_anim, AnimClipSet_t clips)
         case ANIM_DEATH:    clip = clips.death;    break;
         case ANIM_ATK:      clip = clips.atk;      break;
         case ANIM_ATK_360:  clip = clips.atk360;   break;
+        case ANIM_THROW:    clip = clips.throw;    break;
         case ANIM_IDLE:
         default:            clip = clips.idle;     break;
     }
@@ -28,10 +29,10 @@ int anim_controller_advance(AnimState_t current_state, int current_frame, int ke
 
         case ANIM_ATK:
         case ANIM_ATK_360:
+        case ANIM_THROW:
             if (current_frame < keyframe - 1) return current_frame + 1;
             if (out_finished) *out_finished = true; // swing completed this tick
             return current_frame;
-
         case ANIM_IDLE:
             return 0;
 

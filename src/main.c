@@ -22,7 +22,7 @@
 
 #define SUPPORT_GPU_SKINNING    1
 
-#define     MODEL_PATH      "../assets/working_assets/xbot71.glb"
+#define     MODEL_PATH      "../assets/working_assets/xbot72.glb"
 #define     SKINNING_VS     "../assets/shaders/glsl330/skinning.vs"
 #define     SKINNING_FS     "../assets/shaders/glsl330/skinning.fs"
 
@@ -115,7 +115,7 @@ int main(void)
         }
     }
     
-    int anim_count = 0, idleidx = 0, walkidx = 0, runidx = 0, deathidx = 0, atkidx = 0, atk360idx = 0;
+    int anim_count = 0, idleidx = 0, walkidx = 0, runidx = 0, deathidx = 0, atkidx = 0, atk360idx = 0, throwidx = 0;
     ModelAnimation * animations = LoadModelAnimations(MODEL_PATH, &anim_count);
     for (int i = 0; i < anim_count; ++i) {
         if (strstr(animations[i].name, "Idle"))         idleidx = i;
@@ -124,10 +124,12 @@ int main(void)
         if (strstr(animations[i].name, "Death"))        deathidx = i;
         if (strstr(animations[i].name, "quickatk"))     atkidx = i;
         if (strstr(animations[i].name, "strongatk360")) atk360idx = i;
+        if (strstr(animations[i].name, "Throw"))        throwidx = i;
     }
 
     int anim_frame = 0;
     bool pl_attacking = false;
+    bool pl_throwing = false;
     bool en_attacking[ENEMY_NUM] = {false};
     AnimState_t pl_current_atk_anim = false;
 
@@ -185,6 +187,11 @@ int main(void)
                 anim_frame = 0;
                 pl_current_atk_anim = (player_get_last_atk(pl) == ATK_360) ? ANIM_ATK_360 : ANIM_ATK;
             }
+            if (!pl_throwing) {
+                pl_throwing = true;
+                anim_frame = 0;
+                player_set_anim(pl, throwidx);
+            }
             player_set_anim(pl, pl_attacking ? pl_current_atk_anim
                 : (player_get_state(pl) != P_MOVING) ? ANIM_IDLE
                 : (sprinting ? ANIM_RUN : ANIM_WALK));
@@ -192,7 +199,7 @@ int main(void)
             player_set_anim(pl, ANIM_DEATH);
         }
         
-        AnimClipSet_t clips = { idleidx, walkidx, runidx, deathidx, atkidx, atk360idx };
+        AnimClipSet_t clips = { idleidx, walkidx, runidx, deathidx, atkidx, atk360idx, throwidx };
         int clip = anim_controller_resolve_clip(player_get_anim_current(pl), clips);
 
         /* Only advance the clip while the player is actually moving (WASD held).
@@ -296,7 +303,13 @@ int main(void)
         BeginDrawing();
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
-
+                
+                for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
+                    if (thrown_items[t].active) {
+                        DrawCylinder(thrown_items[t].position, 0.3f, 0.3f, 0.08f, 16, GOLD);
+                        DrawCylinderWires(thrown_items[t].position, 0.3f, 0.3f, 0.08f, 16, BLACK);
+                    }
+                }
                 if (show_circle) {
                     DrawCapsuleWires(
                         geometry_capsule_get_coord(player_get_collider(pl), 0),
@@ -312,6 +325,9 @@ int main(void)
                             geometry_capsule_get_radius(enemy_get_collider(enemy_list[i])),
                             8, 8, ORANGE
                         );
+                    }
+                    for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
+                        DrawCircle3D(thrown_items[t].position, ITEM_FLEE_TRIGGER_RADIUS, (Vector3){1,0,0}, 90.0f, YELLOW);
                     }
                 }
                 DrawGrid(50, 1.0f);

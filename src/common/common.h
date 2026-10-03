@@ -10,7 +10,8 @@ typedef enum
     ANIM_RUN,
     ANIM_DEATH,
     ANIM_ATK,
-    ANIM_ATK_360
+    ANIM_ATK_360,
+    ANIM_THROW
 } AnimState_t;
 
 typedef enum
