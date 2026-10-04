@@ -47,6 +47,7 @@ void        enemy_normal_attack(Enemy_t * enemy, float deltatime);
 void        enemy_set_anim(Enemy_t * enemy, int anim_idx);
 void        enemy_set_anim_frame(Enemy_t * enemy, int frame);
 void        enemy_draw_detect_range(Enemy_t * enemy);
+void        enemy_set_ring_angle(Enemy_t * enemy, float rad_angle);
 Vector3     enemy_update_general(Enemy_t * enemy, Vector3 player_pos, float deltatime);
 
 void        enemy_start_flee(Enemy_t * enemy, Vector3 target_pos);

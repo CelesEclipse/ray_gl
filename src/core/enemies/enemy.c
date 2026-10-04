@@ -13,6 +13,8 @@
 
 #define ENEMY_SPRINT_DIST_ENTER   7.0f  // moved here from main.c - this logic now fully lives in enemy_tick
 #define ENEMY_SPRINT_DIST_EXIT    5.0f
+#define ENEMY_RING_EXTRA_RADIUS     1.0f
+#define ENEMY_RING_ARRIVE_EPS       0.05f
 
 struct Enemy
 {
@@ -35,6 +37,7 @@ struct Enemy
     bool            m_flee_reached;
     float           m_flee_timer;
     bool            m_attacking; // moved here from main.c's en_attacking[] array - now fully internal to enemy_tick
+    float           m_ring_angle;
 };
 
 Enemy_t * enemy_initialize(const char * name)
@@ -63,6 +66,7 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_flee_reached = false;
     e->m_flee_timer = 0.0f;
     e->m_attacking = false;
+    e->m_ring_angle = 0.0f;
 
     e->m_collider = geometry_capsule_alloc();
     geometry_capsule_set_radius(e->m_collider, 1.0f);
@@ -75,6 +79,11 @@ void enemy_destroy(Enemy_t * e)
         free(e);
     }
     e = NULL;
+}
+
+static Vector3 ring_offset(float angle, float radius)
+{
+    return (Vector3){sinf(angle) * radius, 0.0f, cosf(angle) * radius};
 }
 
 Vector3 enemy_get_position(const Enemy_t * enemy)
@@ -212,6 +221,12 @@ void enemy_update_collider(Enemy_t * enemy)
     geometry_capsule_set_coord(enemy->m_collider, 1, tip);
 }
 
+void enemy_set_ring_angle(Enemy_t * enemy, float rad_angle)
+{
+    if (!enemy) return;
+    enemy->m_ring_angle = rad_angle;
+}
+
 Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime)
 {
     /* Same as player */
@@ -231,13 +246,20 @@ Vector3 enemy_update_general(Enemy_t *enemy, Vector3 player_pos, float deltatime
 
     if (distance > stop_distance) {
         enemy->m_state = E_MOVING;
-        Vector3 direction = Vector3Normalize(dist);
+
+        // enemy's slot on the ring, not player's centre
+        float ring_rad = enemy->m_atk_range + ENEMY_RING_EXTRA_RADIUS;
+        Vector3 target = Vector3Add(player_pos, ring_offset(enemy->m_ring_angle, ring_rad));
+        Vector3 to_target = Vector3Subtract(target, enemy->m_position);
+        float target_dist = Vector3Length(to_target);
+
+        if (target_dist < ENEMY_RING_ARRIVE_EPS) return (Vector3){0};
+        Vector3 direction = Vector3Scale(to_target, 1.0f / target_dist);
         enemy->m_rotation = atan2f(direction.x, direction.z) * RAD2DEG;
 
-        return Vector3Scale(
-            direction,
-            enemy->m_speed * deltatime
-        );
+        float step = enemy->m_speed * deltatime;
+        if (step > target_dist) step = target_dist;
+        return Vector3Scale(direction, step);
     }
 
     enemy->m_state = E_ATTACK;

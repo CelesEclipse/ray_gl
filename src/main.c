@@ -61,6 +61,7 @@ int main(void)
 
     for (int i = 0; i < ENEMY_NUM; ++i) {
         enemy_list[i] = enemy_initialize("hero");
+        enemy_set_ring_angle(enemy_list[i], (2.0f * PI * i) / ENEMY_NUM);
         enpos_list[i] = generate_random_vector(min_random_val, max_random_val);
     }
 
