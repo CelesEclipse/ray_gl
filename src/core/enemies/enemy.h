@@ -34,6 +34,8 @@ CapsuleCollider3D_t * enemy_get_collider(const Enemy_t * enemy);
 BoundingBox enemy_get_hitbox(const Enemy_t * enemy, Vector3 player_pos);
 int         enemy_get_anim_current(const Enemy_t * enemy);
 int         enemy_get_anim_frame(const Enemy_t * enemy);
+float       enemy_get_ring_radius(const Enemy_t * enemy);
+Vector3     enemy_get_ring_slot(const Enemy_t * enemy, Vector3 player_pos);
 
 /* Setter functions */
 void        enemy_set_position(Enemy_t * enemy, Vector3 new_pos);
@@ -56,3 +58,6 @@ bool        enemy_flee_did_reach_target(const Enemy_t * enemy);
 
 Vector3     enemy_tick(Enemy_t * enemy, Vector3 player_pos, float deltatime,
                         AnimClipSet_t clips, ModelAnimation * animations, int * out_clip);
+
+// Dynamic slot assignment
+void        enemy_assign_ring_slots(Enemy_t ** list, int count, Vector3 player_pos);

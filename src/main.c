@@ -61,7 +61,7 @@ int main(void)
 
     for (int i = 0; i < ENEMY_NUM; ++i) {
         enemy_list[i] = enemy_initialize("hero");
-        enemy_set_ring_angle(enemy_list[i], (2.0f * PI * i) / ENEMY_NUM);
+        // enemy_set_ring_angle(enemy_list[i], (2.0f * PI * i) / ENEMY_NUM);
         enpos_list[i] = generate_random_vector(min_random_val, max_random_val);
     }
 
@@ -193,6 +193,7 @@ int main(void)
 
         /* enemy */
         Vector3 enemy_movement[ENEMY_NUM];
+        enemy_assign_ring_slots(enemy_list, ENEMY_NUM, pl_pos);
         for (int i = 0; i < ENEMY_NUM; ++i) {
 
             // Trigger: only from idle or actively chasing - never interrupt an attack, death, or an already-fleeing enemy
@@ -273,6 +274,19 @@ int main(void)
                         if (draw_items[t].active) {
                             DrawCircle3D(draw_items[t].position, ITEM_FLEE_TRIGGER_RADIUS, (Vector3){1,0,0}, 90.0f, YELLOW);
                         }
+                    }
+                    
+                    // approach ring
+                    if (ENEMY_NUM > 0) {
+                        DrawCircle3D(pl_pos, enemy_get_ring_radius(enemy_list[0]),
+                 (Vector3){1, 0, 0}, 90.0f, MAGENTA);
+                    }
+                    for (int i = 0; i < ENEMY_NUM; ++i) {
+                        if (enemy_is_dead(enemy_list[i]) || enemy_get_state(enemy_list[i]) == E_FLEE) continue;
+
+                        Vector3 slot = enemy_get_ring_slot(enemy_list[i], pl_pos);
+                        DrawSphere(slot, 0.2f, MAGENTA);               // the slot itself
+                        DrawLine3D(enpos_list[i], slot, MAGENTA);      // enemy -> its slot
                     }
                 }
                 DrawGrid(50, 1.0f);

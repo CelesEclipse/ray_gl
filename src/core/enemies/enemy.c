@@ -13,8 +13,9 @@
 
 #define ENEMY_SPRINT_DIST_ENTER   7.0f  // moved here from main.c - this logic now fully lives in enemy_tick
 #define ENEMY_SPRINT_DIST_EXIT    5.0f
-#define ENEMY_RING_EXTRA_RADIUS     1.0f
+#define ENEMY_RING_EXTRA_RADIUS     2.0f
 #define ENEMY_RING_ARRIVE_EPS       0.05f
+#define ENEMY_MAX_SLOTS             64
 
 struct Enemy
 {
@@ -84,6 +85,18 @@ void enemy_destroy(Enemy_t * e)
 static Vector3 ring_offset(float angle, float radius)
 {
     return (Vector3){sinf(angle) * radius, 0.0f, cosf(angle) * radius};
+}
+
+float enemy_get_ring_radius(const Enemy_t * enemy)
+{
+    if (enemy == NULL) return 0.0f;
+    return enemy->m_atk_range + ENEMY_RING_EXTRA_RADIUS;
+}
+
+Vector3 enemy_get_ring_slot(const Enemy_t * enemy, Vector3 player_pos)
+{
+    if (enemy == NULL) return player_pos;
+    return Vector3Add(player_pos, ring_offset(enemy->m_ring_angle, enemy_get_ring_radius(enemy)));
 }
 
 Vector3 enemy_get_position(const Enemy_t * enemy)
@@ -405,4 +418,57 @@ Vector3 enemy_tick(Enemy_t * enemy, Vector3 player_pos, float deltatime,
 
     if (out_clip) *out_clip = clip;
     return movement;
+}
+
+/*
+Each frame, take the living enemies in detect range, sort them by their current angle around the player, 
+and spread them evenly around the ring in that order. 
+Then rotate the whole set so the total deviation from where they already are is as small as possible. 
+Keeping the cyclic order means paths never cross, and the circular mean gives the best rotation without any search.
+*/
+void enemy_assign_ring_slots(Enemy_t ** list, int count, Vector3 player_pos)
+{
+    int idx[ENEMY_MAX_SLOTS];
+    float angle[ENEMY_MAX_SLOTS];
+    int n = 0;
+
+    for (int i = 0; i < count && n < ENEMY_MAX_SLOTS; ++i) {
+        Enemy_t * e = list[i];
+        if (!e) continue;
+        if (e->m_state == E_DEAD || e->m_state == E_FLEE) continue;
+
+        Vector3 dist = Vector3Subtract(e->m_position, player_pos);
+        if (Vector3Length(dist) > e->m_detect_range) continue;
+
+        idx[n] = i;
+        angle[n] = atan2f(dist.x, dist.z);
+        n++;
+
+        // insertion sort by angle (optimize later if needed)
+        for (int a = 1; a < n; ++a) {
+            int ki = idx[a];
+            float ka = angle[a];
+            int b = a - 1;
+            while (b >= 0 && angle[b] > ka) {
+                idx[b + 1] = idx[b];
+                angle[b + 1] = angle[b];
+                --b;
+            }
+            idx[b + 1] = ki;
+            angle[b + 1] = ka;
+        }
+
+        // rotated to best match current positions
+        float step = 2.0f * PI / (float)n;
+        float sx = 0.0f, sz = 0.0f;
+        for (int k = 0; k < n; ++k) {
+            float diff = angle[k] - k * step;
+            sx += sinf(diff);
+            sz += cosf(diff);
+        }
+        float base = atan2f(sx, sz);
+        for (int k = 0; k < n; ++k) {
+            list[idx[k]]->m_ring_angle = base + k * step;
+        }
+    }
 }
