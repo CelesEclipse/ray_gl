@@ -18,6 +18,7 @@
 #include "core/player/player.h"
 #include "core/enemies/enemy.h"
 #include "core/hud/ui.h"
+#include "core/items/items.h"
 #include "utils/utils.h"
 
 #define SUPPORT_GPU_SKINNING    1
@@ -32,25 +33,9 @@
 #define     ENEMY_MAXHP     120
 #define     DEBUG_KEY       0
 #define     ENEMY_NUM       5
-#define     ENEMY_SPRINT_DIST_ENTER   7.0f
-#define     ENEMY_SPRINT_DIST_EXIT    5.0f
 
-#define MAX_THROWN_ITEMS    8
-#define GRAVITY             9.8f
-#define GROUND_Y            0.0f
 #define ITEM_FLEE_TRIGGER_RADIUS   6.0f
 #define THROW_RELEASE_FRAME        38
-
-typedef struct
-{
-    ItemType_t type;
-    Vector3 position;
-    Vector3 velocity;
-    bool active;
-    bool landed;
-} ThrownItem_t;
-
-ThrownItem_t thrown_items[MAX_THROWN_ITEMS] = {0};
 
 static Vector3 generate_random_vector(float min, float max)
 {
@@ -133,7 +118,6 @@ int main(void)
     bool pl_throwing = false;
     Vector3 pl_throw_spawn_pos = {0};
     Vector3 pl_throw_spawn_vel = {0};
-    bool en_attacking[ENEMY_NUM] = {false};
     AnimState_t pl_current_atk_anim = ANIM_IDLE;
 
     /* Main loop */
@@ -160,20 +144,8 @@ int main(void)
             }
         }
 
-        // Handle throwing action, simple, no complex collision yet
-        for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
-            if (!thrown_items[t].active || thrown_items[t].landed) continue;
+        items_update(deltaTime);
 
-            thrown_items[t].velocity.y -= GRAVITY * deltaTime;
-            thrown_items[t].position = Vector3Add(thrown_items[t].position,
-                Vector3Scale(thrown_items[t].velocity, deltaTime));
-
-            if (thrown_items[t].position.y <= GROUND_Y) {
-                thrown_items[t].position.y = GROUND_Y;
-                thrown_items[t].landed = true;
-                thrown_items[t].velocity = (Vector3){0};
-            }
-        }
         Vector3 movement = player_update_general(pl, &pl_rotation, deltaTime, forward, right);
         
         bool sprinting = IsKeyDown(KEY_LEFT_SHIFT);
@@ -213,12 +185,7 @@ int main(void)
 
         // spawn the actual thrown item on its release frame, not on keypress
         if (pl_throwing && player_get_anim_current(pl) == ANIM_THROW && anim_frame == THROW_RELEASE_FRAME) {
-            for (int i = 0; i < MAX_THROWN_ITEMS; ++i) {
-                if (!thrown_items[i].active) {
-                    thrown_items[i] = (ThrownItem_t){ ITEM_COIN, pl_throw_spawn_pos, pl_throw_spawn_vel, true, false };
-                    break;
-                }
-            }
+            items_spawn(ITEM_COIN, pl_throw_spawn_pos, pl_throw_spawn_vel);
         }
 
         UpdateModelAnimation(pl_model, animations[clip], anim_frame);
@@ -229,63 +196,24 @@ int main(void)
 
             // Trigger: only from idle or actively chasing - never interrupt an attack, death, or an already-fleeing enemy
             if (enemy_get_state(enemy_list[i]) == E_IDLE || enemy_get_state(enemy_list[i]) == E_MOVING) {
-                for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
-                    if (thrown_items[t].active && thrown_items[t].landed &&
-                        Vector3Distance(enpos_list[i], thrown_items[t].position) < ITEM_FLEE_TRIGGER_RADIUS) {
-                        enemy_start_flee(enemy_list[i], thrown_items[t].position);
+                int item_count = 0;
+                const ThrownItem_t * items = items_get_all(&item_count);
+                for (int t = 0; t < item_count; ++t) {
+                    if (items[t].active && items[t].landed &&
+                        Vector3Distance(enpos_list[i], items[t].position) < ITEM_FLEE_TRIGGER_RADIUS) {
+                        enemy_start_flee(enemy_list[i], items[t].position);
                         break;
                     }
                 }
             }
 
-            if (enemy_get_state(enemy_list[i]) == E_FLEE) {
-                enemy_movement[i] = enemy_update_flee(enemy_list[i], pl_pos, deltaTime);
-                enemy_set_anim(enemy_list[i], ANIM_WALK);
+            int clip = 0;
+            enemy_movement[i] = enemy_tick(enemy_list[i], pl_pos, deltaTime, clips, animations, &clip);
 
-                if (enemy_flee_did_reach_target(enemy_list[i])) {
-                    for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
-                        if (thrown_items[t].active &&
-                            Vector3Distance(thrown_items[t].position, enpos_list[i]) < FLEE_PICKUP_RADIUS) {
-                            thrown_items[t].active = false;
-                            break;
-                        }
-                    }
-                }
-            } else {
-                float dist_to_pl = Vector3Distance(pl_pos, enpos_list[i]);
-                bool was_sprinting = enemy_get_speed(enemy_list[i]) > 10.0f;
-                bool en_sprinting = was_sprinting
-                    ? (dist_to_pl > ENEMY_SPRINT_DIST_EXIT)
-                    : (dist_to_pl > ENEMY_SPRINT_DIST_ENTER);
-                enemy_set_sprint(enemy_list[i], en_sprinting);
-
-                enemy_movement[i] = enemy_update_general(enemy_list[i], pl_pos, deltaTime);
-                enemy_normal_attack(enemy_list[i], deltaTime);
-
-                // Same as player but array
-                if (!enemy_is_dead(enemy_list[i])) {
-                    if (!en_attacking[i] && enemy_get_did_attack(enemy_list[i])) {
-                        en_attacking[i] = true;
-                        enemy_set_anim_frame(enemy_list[i], 0);
-                    }
-                    enemy_set_anim(enemy_list[i], en_attacking[i] ? ANIM_ATK
-                        : (enemy_get_state(enemy_list[i]) == E_MOVING)
-                        ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
-                        : ANIM_IDLE);
-                } else {
-                    enemy_set_anim(enemy_list[i], ANIM_DEATH);
-                }
+            if (enemy_flee_did_reach_target(enemy_list[i])) {
+                items_consume_near(enpos_list[i], FLEE_PICKUP_RADIUS);
             }
 
-            int clip = anim_controller_resolve_clip(enemy_get_anim_current(enemy_list[i]), clips);
-            bool en_atk_finished = false;
-            int frame = anim_controller_advance(enemy_get_anim_current(enemy_list[i]),
-                enemy_get_anim_frame(enemy_list[i]), 
-                animations[clip].keyframeCount,
-                &en_atk_finished);
-            if (en_atk_finished) en_attacking[i] = false;
-
-            enemy_set_anim_frame(enemy_list[i], frame);
             UpdateModelAnimation(enemy_models[i], animations[clip], enemy_get_anim_frame(enemy_list[i]));
         }
 
@@ -316,10 +244,12 @@ int main(void)
             ClearBackground(DARKGRAY);
             BeginMode3D(camera);
                 
-                for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
-                    if (thrown_items[t].active) {
-                        DrawCylinder(thrown_items[t].position, 0.3f, 0.3f, 0.08f, 16, GOLD);
-                        DrawCylinderWires(thrown_items[t].position, 0.3f, 0.3f, 0.08f, 16, BLACK);
+                int draw_item_count = 0;
+                const ThrownItem_t * draw_items = items_get_all(&draw_item_count);
+                for (int t = 0; t < draw_item_count; ++t) {
+                    if (draw_items[t].active) {
+                        DrawCylinder(draw_items[t].position, 0.3f, 0.3f, 0.08f, 16, GOLD);
+                        DrawCylinderWires(draw_items[t].position, 0.3f, 0.3f, 0.08f, 16, BLACK);
                     }
                 }
                 if (show_circle) {
@@ -338,8 +268,10 @@ int main(void)
                             8, 8, ORANGE
                         );
                     }
-                    for (int t = 0; t < MAX_THROWN_ITEMS; ++t) {
-                        DrawCircle3D(thrown_items[t].position, ITEM_FLEE_TRIGGER_RADIUS, (Vector3){1,0,0}, 90.0f, YELLOW);
+                    for (int t = 0; t < draw_item_count; ++t) {
+                        if (draw_items[t].active) {
+                            DrawCircle3D(draw_items[t].position, ITEM_FLEE_TRIGGER_RADIUS, (Vector3){1,0,0}, 90.0f, YELLOW);
+                        }
                     }
                 }
                 DrawGrid(50, 1.0f);

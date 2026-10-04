@@ -2,6 +2,7 @@
 
 #include "raylib.h"
 #include "../../physics/geometry.h"
+#include "../models/animations/anim_controller.h"
 
 #define FLEE_PICKUP_RADIUS  1.2f
 
@@ -51,3 +52,6 @@ Vector3     enemy_update_general(Enemy_t * enemy, Vector3 player_pos, float delt
 void        enemy_start_flee(Enemy_t * enemy, Vector3 target_pos);
 Vector3     enemy_update_flee(Enemy_t * enemy, Vector3 player_pos, float deltatime);
 bool        enemy_flee_did_reach_target(const Enemy_t * enemy);
+
+Vector3     enemy_tick(Enemy_t * enemy, Vector3 player_pos, float deltatime,
+                        AnimClipSet_t clips, ModelAnimation * animations, int * out_clip);

@@ -11,6 +11,9 @@
 #define FLEE_DURATION       6.0f
 #define FLEE_SPEED          6.0f  //deliberately the normal/walk speed, not sprint - enemy walks away, doesn't run . Isn't it?
 
+#define ENEMY_SPRINT_DIST_ENTER   7.0f  // moved here from main.c - this logic now fully lives in enemy_tick
+#define ENEMY_SPRINT_DIST_EXIT    5.0f
+
 struct Enemy
 {
     char            m_name[NAME_SIZE];
@@ -31,6 +34,7 @@ struct Enemy
     Vector3         m_flee_target;
     bool            m_flee_reached;
     float           m_flee_timer;
+    bool            m_attacking; // moved here from main.c's en_attacking[] array - now fully internal to enemy_tick
 };
 
 Enemy_t * enemy_initialize(const char * name)
@@ -58,6 +62,7 @@ Enemy_t * enemy_initialize(const char * name)
     e->m_flee_target = (Vector3){0};
     e->m_flee_reached = false;
     e->m_flee_timer = 0.0f;
+    e->m_attacking = false;
 
     e->m_collider = geometry_capsule_alloc();
     geometry_capsule_set_radius(e->m_collider, 1.0f);
@@ -329,4 +334,53 @@ Vector3 enemy_update_flee(Enemy_t * enemy, Vector3 player_pos, float deltatime)
 
     enemy->m_rotation = atan2f(dir.x, dir.z) * RAD2DEG;
     return Vector3Scale(dir, FLEE_SPEED * deltatime);
+}
+
+Vector3 enemy_tick(Enemy_t * enemy, Vector3 player_pos, float deltatime,
+                    AnimClipSet_t clips, ModelAnimation * animations, int * out_clip)
+{
+    if (!enemy) {
+        if (out_clip) *out_clip = clips.idle;
+        return (Vector3){0};
+    }
+
+    Vector3 movement;
+
+    if (enemy->m_state == E_FLEE) {
+        movement = enemy_update_flee(enemy, player_pos, deltatime);
+        enemy_set_anim(enemy, ANIM_WALK);
+    } else {
+        float dist_to_pl = Vector3Distance(player_pos, enemy->m_position);
+        bool was_sprinting = enemy->m_speed > 10.0f;
+        bool en_sprinting = was_sprinting
+            ? (dist_to_pl > ENEMY_SPRINT_DIST_EXIT)
+            : (dist_to_pl > ENEMY_SPRINT_DIST_ENTER);
+        enemy_set_sprint(enemy, en_sprinting);
+
+        movement = enemy_update_general(enemy, player_pos, deltatime);
+        enemy_normal_attack(enemy, deltatime);
+
+        if (!enemy_is_dead(enemy)) {
+            if (!enemy->m_attacking && enemy_get_did_attack(enemy)) {
+                enemy->m_attacking = true;
+                enemy_set_anim_frame(enemy, 0);
+            }
+            enemy_set_anim(enemy, enemy->m_attacking ? ANIM_ATK
+                : (enemy->m_state == E_MOVING)
+                ? (en_sprinting ? ANIM_RUN : ANIM_WALK)
+                : ANIM_IDLE);
+        } else {
+            enemy_set_anim(enemy, ANIM_DEATH);
+        }
+    }
+
+    int clip = anim_controller_resolve_clip(enemy->m_anim_current, clips);
+    bool finished = false;
+    int frame = anim_controller_advance(enemy->m_anim_current, enemy->m_anim_frame,
+        animations[clip].keyframeCount, &finished);
+    if (finished) enemy->m_attacking = false;
+    enemy->m_anim_frame = frame;
+
+    if (out_clip) *out_clip = clip;
+    return movement;
 }

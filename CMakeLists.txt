@@ -25,6 +25,8 @@ set(SOURCES
     src/core/collision/collision.c
     src/core/models/animations/anim_controller.h
     src/core/models/animations/anim_controller.c
+    src/core/items/items.h
+    src/core/items/items.c
     src/physics/geometry.h
     src/physics/geometry.c
 )
